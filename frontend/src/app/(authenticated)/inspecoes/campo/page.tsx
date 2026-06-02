@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { Inspecao, TemplateChecklist } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,9 +20,9 @@ interface RespostaChecklistForm {
 }
 
 export default function InspecaoCampoPage() {
-  const params = useParams();
   const router = useRouter();
-  const inspecaoId = params.inspecaoId;
+  const searchParams = useSearchParams();
+  const inspecaoId = searchParams.get('id');
 
   const [inspecao, setInspecao] = useState<Inspecao | null>(null);
   const [template, setTemplate] = useState<TemplateChecklist | null>(null);
@@ -143,11 +143,8 @@ export default function InspecaoCampoPage() {
   };
 
   const baixarPdfLaudo = () => {
-    // Abrir endpoint de download direto do PDF
     const token = localStorage.getItem('token');
     const url = `${api.defaults.baseURL}/api/inspecoes/${inspecaoId}/pdf?token=${token}`;
-    
-    // Método seguro passando token no cabeçalho ou abrindo requisição autenticada
     window.open(url, '_blank');
   };
 
@@ -293,7 +290,7 @@ export default function InspecaoCampoPage() {
                         type="button"
                         variant={resp.resposta === 'nao_se_aplica' ? 'default' : 'outline'}
                         className={`font-semibold py-6 flex flex-col items-center justify-center gap-1 border-slate-200 transition ${resp.resposta === 'nao_se_aplica' ? 'bg-slate-700 hover:bg-slate-800 text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'}`}
-                        onClick={() => handleRespostaChange(item.id, 'nao_se_aplica')}
+                        onClick={() => handleSimularFoto(item.id)} // Simula com foto ao clicar em Não se Aplica ou direto no botão abaixo
                       >
                         <span className="h-5 flex items-center text-sm font-bold">-</span>
                         <span className="text-xs">NÃO SE APLICA</span>

@@ -16,6 +16,8 @@ import {
   ShieldAlert,
   Settings,
   ArrowLeft,
+  ClipboardCheck,
+  ShieldCheck,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -49,6 +51,13 @@ const navSections = [
     links: [
       { href: '/projetos',  label: 'Projetos',  icon: FolderKanban },
       { href: '/empresas',  label: 'Empresas',  icon: Building2    },
+    ],
+  },
+  {
+    label: 'Inspeções',
+    links: [
+      { href: '/contratos-amc',  label: 'Contratos AMC',     icon: ShieldCheck },
+      { href: '/portal-cliente', label: 'Portal do Cliente', icon: ClipboardCheck },
     ],
   },
   {
