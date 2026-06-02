@@ -7,6 +7,18 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import desc, asc
 from sqlalchemy.orm import joinedload
 
+
+def normalizar_posicoes_estagio(estagio_id):
+    lead_estagios = (
+        LeadEstagio.query
+        .filter_by(estagio_id=estagio_id)
+        .order_by(LeadEstagio.posicao.asc(), LeadEstagio.data_entrada.asc(), LeadEstagio.id.asc())
+        .all()
+    )
+    for idx, lead_estagio in enumerate(lead_estagios):
+        lead_estagio.posicao = idx
+
+
 # ----- Rotas de Pipeline -----
 
 @pipelines_bp.route('', methods=['GET'])
@@ -323,24 +335,55 @@ def mover_lead(lead_id):
         estagio = Estagio.query.get(dados.get('estagio_id'))
         if not estagio:
             return jsonify({'erro': 'Estágio não encontrado'}), 404
+
+        posicao_destino = dados.get('posicao')
+        try:
+            posicao_destino = int(posicao_destino) if posicao_destino is not None else None
+        except (TypeError, ValueError):
+            return jsonify({'erro': 'Posição inválida'}), 400
             
         # Verificar se o lead já está em algum estágio deste pipeline
-        lead_estagio = LeadEstagio.query.filter_by(lead_id=lead_id).join(Estagio).filter(Estagio.pipeline_id == estagio.pipeline_id).first()
+        lead_estagio = (
+            LeadEstagio.query
+            .filter_by(lead_id=lead_id)
+            .join(Estagio)
+            .filter(Estagio.pipeline_id == estagio.pipeline_id)
+            .first()
+        )
         
         if lead_estagio:
-            # Atualizar o estágio existente
             old_estagio_id = lead_estagio.estagio_id
-            lead_estagio.estagio_id = estagio.id
-            lead_estagio.posicao = dados.get('posicao', 0)
+            normalizar_posicoes_estagio(old_estagio_id)
+            db.session.flush()
+            if old_estagio_id != estagio.id:
+                lead_estagio.estagio_id = estagio.id
+                db.session.flush()
+                normalizar_posicoes_estagio(old_estagio_id)
         else:
-            # Criar nova associação lead-estágio
             lead_estagio = LeadEstagio(
                 lead_id=lead_id,
                 estagio_id=estagio.id,
-                posicao=dados.get('posicao', 0)
+                posicao=0
             )
             db.session.add(lead_estagio)
             old_estagio_id = None
+            db.session.flush()
+
+        lead_estagios_destino = (
+            LeadEstagio.query
+            .filter_by(estagio_id=estagio.id)
+            .order_by(LeadEstagio.posicao.asc(), LeadEstagio.data_entrada.asc(), LeadEstagio.id.asc())
+            .all()
+        )
+        lead_estagios_destino = [item for item in lead_estagios_destino if item.id != lead_estagio.id]
+
+        if posicao_destino is None:
+            posicao_destino = len(lead_estagios_destino)
+        posicao_destino = max(0, min(posicao_destino, len(lead_estagios_destino)))
+
+        lead_estagios_destino.insert(posicao_destino, lead_estagio)
+        for idx, item in enumerate(lead_estagios_destino):
+            item.posicao = idx
         
         db.session.commit()
         
@@ -384,6 +427,8 @@ def reordenar_leads():
             lead_estagio = LeadEstagio.query.get(lead_estagio_id)
             if lead_estagio and lead_estagio.estagio_id == estagio_id:
                 lead_estagio.posicao = idx
+
+        normalizar_posicoes_estagio(estagio_id)
         
         db.session.commit()
         
@@ -399,4 +444,4 @@ def reordenar_leads():
         return jsonify({'mensagem': 'Leads reordenados com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'erro': f'Erro ao reordenar leads: {str(e)}'}), 500 
+        return jsonify({'erro': f'Erro ao reordenar leads: {str(e)}'}), 500

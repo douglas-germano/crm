@@ -23,7 +23,7 @@ interface Estagio {
   id: number
   nome: string
   cor: string
-  posicao: number
+  ordem: number
 }
 
 interface LeadEstagio {
@@ -48,6 +48,12 @@ interface Lead {
   status: string
 }
 
+interface DraggedLead {
+  leadId: number
+  leadEstagioId: number
+  sourceEstagioId: number
+}
+
 export default function PipelinePage() {
   const [selectedPipeline, setSelectedPipeline] = useState<number | null>(null)
   const [movingLead, setMovingLead] = useState<{ leadId: number; currentEstagioId: number } | null>(null)
@@ -56,6 +62,9 @@ export default function PipelinePage() {
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null)
   const [selectedEstagioId, setSelectedEstagioId] = useState<number | null>(null)
   const [addingLead, setAddingLead] = useState(false)
+  const [draggedLead, setDraggedLead] = useState<DraggedLead | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ estagioId: number; index: number } | null>(null)
+  const [actionError, setActionError] = useState('')
 
   const { data: pipelinesData, isLoading: loadingPipelines } = useSWR('/api/pipelines', fetcher)
   const pipelines = pipelinesData?.pipelines ?? pipelinesData ?? []
@@ -90,34 +99,106 @@ export default function PipelinePage() {
     )
   })
 
-  const handleMove = async (leadId: number, estagioId: number) => {
+  const getColumnLeads = (estagioId: number) => (
+    leadsPorEstagio.find(col => col.estagio.id === estagioId)?.leads ?? []
+  )
+
+  const getDropIndex = (estagioId: number, fallbackIndex?: number) => {
+    const columnLeads = getColumnLeads(estagioId).filter(item => item.id !== draggedLead?.leadId)
+    const index = fallbackIndex ?? columnLeads.length
+    return Math.max(0, Math.min(index, columnLeads.length))
+  }
+
+  const moveLead = async (leadId: number, estagioId: number, posicao?: number) => {
+    setActionError('')
     try {
       await api.post(`/api/pipelines/leads/${leadId}/mover`, {
         estagio_id: estagioId,
-        posicao: 0
+        posicao: posicao ?? getColumnLeads(estagioId).length
       })
       setMovingLead(null)
-      mutateBoard()
+      await mutateBoard()
     } catch (err) {
       console.error(err)
+      setActionError('Nao foi possivel mover o lead. Tente novamente.')
     }
+  }
+
+  const handleMove = async (leadId: number, estagioId: number) => {
+    await moveLead(leadId, estagioId)
+  }
+
+  const handleDragStart = (event: React.DragEvent, item: LeadEstagio, estagioId: number) => {
+    const leadEstagioId = item.lead_estagio_id ?? item.id
+    setActionError('')
+    setMovingLead(null)
+    setDraggedLead({ leadId: item.id, leadEstagioId, sourceEstagioId: estagioId })
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('application/json', JSON.stringify({
+      leadId: item.id,
+      leadEstagioId,
+      sourceEstagioId: estagioId
+    }))
+  }
+
+  const handleDragOver = (event: React.DragEvent, estagioId: number, index?: number) => {
+    event.preventDefault()
+    if (index !== undefined) event.stopPropagation()
+    event.dataTransfer.dropEffect = 'move'
+    setDropTarget({ estagioId, index: getDropIndex(estagioId, index) })
+  }
+
+  const handleDragLeave = (event: React.DragEvent, estagioId: number) => {
+    const nextTarget = event.relatedTarget as Node | null
+    if (nextTarget && event.currentTarget.contains(nextTarget)) return
+    setDropTarget(current => current?.estagioId === estagioId ? null : current)
+  }
+
+  const handleDrop = async (event: React.DragEvent, estagioId: number, index?: number) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const payload = draggedLead ?? (() => {
+      try {
+        return JSON.parse(event.dataTransfer.getData('application/json')) as DraggedLead
+      } catch {
+        return null
+      }
+    })()
+
+    setDropTarget(null)
+    setDraggedLead(null)
+
+    if (!payload) return
+
+    const posicao = getDropIndex(estagioId, index)
+    const isSamePosition = payload.sourceEstagioId === estagioId && getColumnLeads(estagioId).findIndex(item => item.id === payload.leadId) === posicao
+    if (isSamePosition) return
+
+    await moveLead(payload.leadId, estagioId, posicao)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedLead(null)
+    setDropTarget(null)
   }
 
   const handleAddLead = async () => {
     if (!selectedLeadId || !selectedEstagioId) return
     setAddingLead(true)
+    setActionError('')
     try {
       await api.post(`/api/pipelines/leads/${selectedLeadId}/mover`, {
         estagio_id: selectedEstagioId,
-        posicao: 0
+        posicao: getColumnLeads(selectedEstagioId).length
       })
       setShowAddModal(false)
       setSelectedLeadId(null)
       setSelectedEstagioId(null)
       setSearchLead('')
-      mutateBoard()
+      await mutateBoard()
     } catch (err) {
       console.error(err)
+      setActionError('Nao foi possivel adicionar o lead ao pipeline.')
     } finally {
       setAddingLead(false)
     }
@@ -160,6 +241,12 @@ export default function PipelinePage() {
         </div>
       </div>
 
+      {actionError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+          {actionError}
+        </div>
+      )}
+
       {/* Kanban Board */}
       {loadingPipelines || loadingBoard ? (
         <div className="flex items-center justify-center py-20">
@@ -187,12 +274,37 @@ export default function PipelinePage() {
                 </div>
 
                 {/* Column Body */}
-                <div className="flex-1 bg-muted/30 border border-t-0 rounded-b-lg p-2 space-y-2 overflow-y-auto">
+                <div
+                  className={cn(
+                    'flex-1 bg-muted/30 border border-t-0 rounded-b-lg p-2 space-y-2 overflow-y-auto transition-colors',
+                    dropTarget?.estagioId === col.estagio.id && 'bg-primary/5 ring-1 ring-primary/30'
+                  )}
+                  onDragOver={(event) => handleDragOver(event, col.estagio.id)}
+                  onDragLeave={(event) => handleDragLeave(event, col.estagio.id)}
+                  onDrop={(event) => handleDrop(event, col.estagio.id)}
+                >
+                  {dropTarget?.estagioId === col.estagio.id && dropTarget.index === 0 && (
+                    <div className="h-1 rounded-full bg-primary/60" />
+                  )}
                   {col.leads.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-8">Nenhum lead neste estagio</p>
+                    <p className="text-xs text-muted-foreground text-center py-8">
+                      Solte um lead aqui
+                    </p>
                   ) : (
-                    col.leads.map((item) => (
-                      <Card key={item.id} className="p-2.5">
+                    col.leads.map((item, index) => (
+                      <div key={item.lead_estagio_id ?? item.id}>
+                        <Card
+                          draggable
+                          onDragStart={(event) => handleDragStart(event, item, col.estagio.id)}
+                          onDragOver={(event) => handleDragOver(event, col.estagio.id, index)}
+                          onDrop={(event) => handleDrop(event, col.estagio.id, index)}
+                          onDragEnd={handleDragEnd}
+                          className={cn(
+                            'p-2.5 transition-all',
+                            draggedLead?.leadId === item.id && 'opacity-50 ring-1 ring-primary/40',
+                            'cursor-grab active:cursor-grabbing'
+                          )}
+                        >
                         <div className="flex items-start gap-2">
                           <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 flex-shrink-0 cursor-grab" />
                           <div className="flex-1 min-w-0">
@@ -245,7 +357,11 @@ export default function PipelinePage() {
                             </Button>
                           )}
                         </div>
-                      </Card>
+                        </Card>
+                        {dropTarget?.estagioId === col.estagio.id && dropTarget.index === index + 1 && (
+                          <div className="mt-2 h-1 rounded-full bg-primary/60" />
+                        )}
+                      </div>
                     ))
                   )}
                 </div>
