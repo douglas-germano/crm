@@ -292,12 +292,15 @@ export default function NegociosPage() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="tipo">Tipo</Label>
-          <Input
-            id="tipo"
-            value={form.tipo}
-            onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
-          />
+          <Label>Tipo</Label>
+          <Select value={form.tipo || 'none'} onValueChange={v => setForm(f => ({ ...f, tipo: v === 'none' ? '' : v }))}>
+            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Selecione...</SelectItem>
+              <SelectItem value="unico">Único</SelectItem>
+              <SelectItem value="recorrente">Recorrente</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
