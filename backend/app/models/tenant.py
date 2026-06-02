@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Tenant(db.Model):
     __tablename__ = 'tenant'
@@ -10,7 +10,7 @@ class Tenant(db.Model):
     nome_fantasia = db.Column(db.String(100), nullable=False)
     subdominio = db.Column(db.String(50), unique=True, nullable=False)
     db_schema = db.Column(db.String(50), unique=True, nullable=False)
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
