@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import api from '@/lib/api'
 import { formatDate, statusColor } from '@/lib/utils'
-import { Plus, Search, Trash2, Loader2, Pencil } from 'lucide-react'
+import { Plus, Search, Trash2, Loader2, Pencil, CheckCircle2 } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -188,7 +188,8 @@ export default function LeadsPage() {
     <div className="space-y-4">
       {/* Success message */}
       {successMessage && (
-        <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm font-medium">
+        <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm font-medium animate-fade-in">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
           {successMessage}
         </div>
       )}
@@ -256,7 +257,7 @@ export default function LeadsPage() {
                   <TableRow
                     key={lead.id}
                     onClick={() => openEditModal(lead)}
-                    className="cursor-pointer"
+                    className="cursor-pointer group hover:bg-steel-50/60 transition-colors"
                   >
                     <TableCell className="font-medium">{lead.nome}</TableCell>
                     <TableCell>{lead.email}</TableCell>
@@ -270,22 +271,22 @@ export default function LeadsPage() {
                     <TableCell>{lead.responsavel?.nome ?? '-'}</TableCell>
                     <TableCell>{formatDate(lead.criado_em)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
                           onClick={(e) => { e.stopPropagation(); openEditModal(lead) }}
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
                           onClick={(e) => { e.stopPropagation(); setDeleteId(lead.id) }}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>

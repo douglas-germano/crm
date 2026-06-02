@@ -17,6 +17,7 @@ import { cn, formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Users, Building2, Wallet, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { DashboardStats, FunilData } from '@/types';
 
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
@@ -96,21 +97,31 @@ function StatCard({
   label,
   value,
   accentColor,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
   accentColor: string;
+  icon: LucideIcon;
 }) {
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative overflow-hidden group hover:[box-shadow:var(--card-shadow-hover)]">
       <div
-        className="absolute left-0 top-0 bottom-0 w-1"
+        className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-200 group-hover:w-1.5"
         style={{ backgroundColor: accentColor }}
       />
       <CardContent className="p-4 pl-5">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">
-          {label}
-        </p>
+        <div className="flex items-start justify-between mb-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+            {label}
+          </p>
+          <div
+            className="flex items-center justify-center w-7 h-7 rounded-md opacity-80"
+            style={{ backgroundColor: accentColor + '18' }}
+          >
+            <Icon className="w-3.5 h-3.5" style={{ color: accentColor }} />
+          </div>
+        </div>
         <p className="text-2xl font-display font-semibold text-foreground tabular-nums">
           {value}
         </p>
@@ -149,37 +160,38 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      {/* ---- Header ---- */}
-      <h2 className="text-xl font-display font-semibold text-foreground">Dashboard</h2>
-
       {/* ---- Stat Cards ---- */}
       {isLoading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
           {Array.from({ length: 4 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
           <StatCard
             label="Total Leads"
             value={stats?.total_leads ?? 0}
             accentColor={COLORS.blue}
+            icon={Users}
           />
           <StatCard
             label="Empresas"
             value={stats?.total_empresas ?? 0}
             accentColor={COLORS.steel}
+            icon={Building2}
           />
           <StatCard
-            label="Negocios Abertos"
+            label="Negócios Abertos"
             value={stats ? formatCurrency(stats.valor_aberto) : 'R$ 0,00'}
             accentColor={COLORS.orange}
+            icon={Wallet}
           />
           <StatCard
             label="Receita Ganha"
             value={stats ? formatCurrency(stats.valor_ganho) : 'R$ 0,00'}
             accentColor={COLORS.green}
+            icon={TrendingUp}
           />
         </div>
       )}
@@ -194,9 +206,9 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           {/* Pipeline */}
           <Card className="lg:col-span-3">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-sm font-display font-semibold text-foreground">
-                Pipeline
+            <CardHeader className="p-4 pb-3">
+              <CardTitle className="text-base font-display font-semibold text-foreground">
+                Pipeline por Estágio
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
@@ -236,9 +248,9 @@ export default function DashboardPage() {
 
           {/* Status */}
           <Card className="lg:col-span-2">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-sm font-display font-semibold text-foreground">
-                Status
+            <CardHeader className="p-4 pb-3">
+              <CardTitle className="text-base font-display font-semibold text-foreground">
+                Status dos Negócios
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
@@ -306,8 +318,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           {/* Origem dos Leads */}
           <Card className="lg:col-span-2">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-sm font-display font-semibold text-foreground">
+            <CardHeader className="p-4 pb-3">
+              <CardTitle className="text-base font-display font-semibold text-foreground">
                 Origem dos Leads
               </CardTitle>
             </CardHeader>
@@ -363,9 +375,9 @@ export default function DashboardPage() {
 
           {/* Conversao */}
           <Card>
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-sm font-display font-semibold text-foreground">
-                Conversao
+            <CardHeader className="p-4 pb-3">
+              <CardTitle className="text-base font-display font-semibold text-foreground">
+                Taxa de Conversão
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 flex flex-col items-center justify-center h-[240px]">

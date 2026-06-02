@@ -1,6 +1,8 @@
 from app import db
 from app.models import Usuario, Perfil, Permissao
 import os
+import secrets
+import string
 from datetime import datetime
 
 def criar_permissoes():
@@ -92,17 +94,20 @@ def criar_usuario_admin(perfil_admin):
     
     admin = Usuario.query.filter_by(email='admin@example.com').first()
     if not admin:
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        senha_gerada = ''.join(secrets.choice(alphabet) for _ in range(16))
         admin = Usuario(
             nome='Administrador',
             email='admin@example.com',
             perfil_id=perfil_admin.id,
             ativo=True
         )
-        admin.senha = 'admin123'  # Em produção, usar senha mais segura
+        admin.senha = senha_gerada
         db.session.add(admin)
         db.session.commit()
-        print("Usuário administrador criado")
-    
+        print(f"Usuário administrador criado — senha inicial: {senha_gerada}")
+        print("IMPORTANTE: altere esta senha imediatamente após o primeiro login.")
+
     return admin
 
 def inicializar_dados():

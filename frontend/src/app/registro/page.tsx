@@ -69,7 +69,7 @@ export default function RegistroPage() {
       <Card className="w-full max-w-lg shadow-2xl border-0">
         <CardHeader className="text-center pb-4">
           <CardTitle className="font-display text-3xl tracking-tight text-foreground">
-            ENGETCH CRM
+            APEX CRM
           </CardTitle>
           <p className="text-sm text-muted-foreground tracking-wide mt-1">
             Plataforma B2B para Engenharia

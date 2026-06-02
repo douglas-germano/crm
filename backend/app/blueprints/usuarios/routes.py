@@ -1,9 +1,10 @@
 from flask import request, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
 from werkzeug.security import generate_password_hash
 from datetime import datetime
 from functools import wraps
+import re
 import uuid
 
 from app import db
@@ -71,6 +72,8 @@ def login():
         return jsonify({'erro': 'Workspace não encontrado'}), 404
         
     # Mudar o schema da conexão atual para o schema do tenant
+    if not re.match(r'^[a-z_][a-z0-9_]*$', tenant.db_schema):
+        return jsonify({'erro': 'Workspace inválido'}), 400
     db.session.execute(text(f"SET search_path TO {tenant.db_schema}, public"))
         
     usuario = Usuario.query.filter_by(email=data.get('email')).first()
@@ -104,7 +107,9 @@ def login():
 @jwt_required(refresh=True)
 def refresh_token():
     identity = get_jwt_identity()
-    access_token = create_access_token(identity=identity)
+    claims = get_jwt()
+    additional = {'schema': claims['schema']} if 'schema' in claims else {}
+    access_token = create_access_token(identity=identity, additional_claims=additional)
     return jsonify({'access_token': access_token}), 200
 
 @usuarios_bp.route('/logout', methods=['POST'])
@@ -500,11 +505,18 @@ def listar_logs():
         except ValueError:
             pass
     
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 200)
+
     # Ordenar por data mais recente
-    logs = query.order_by(LogAtividade.data_hora.desc()).all()
-    
+    pagination = query.order_by(LogAtividade.data_hora.desc()).paginate(page=page, per_page=per_page)
+
     return jsonify({
-        'logs': [log.to_dict() for log in logs]
+        'logs': [log.to_dict() for log in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'page': page,
+        'per_page': per_page
     }), 200
 
 # Endpoint para registrar o primeiro administrador (sem autenticação)
@@ -596,8 +608,10 @@ def esqueci_senha():
         # Por segurança de enumeracao retornamos mesma mensagem sempre
         return jsonify({'mensagem': 'Se os dados estiverem corretos, preparamos as instruções de recuperação.'}), 200
         
+    if not re.match(r'^[a-z_][a-z0-9_]*$', tenant.db_schema):
+        return jsonify({'mensagem': 'Se os dados estiverem corretos, preparamos as instruções de recuperação.'}), 200
     db.session.execute(text(f"SET search_path TO {tenant.db_schema}, public"))
-    
+
     usuario = Usuario.query.filter_by(email=email).first()
     if not usuario or not usuario.ativo:
         return jsonify({'mensagem': 'Se os dados estiverem corretos, preparamos as instruções de recuperação.'}), 200
@@ -609,7 +623,8 @@ def esqueci_senha():
         'schema': tenant.db_schema
     }, salt='password-reset')
     
-    reset_url = f"http://localhost:3000/redefinir-senha?token={token}"
+    base_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')
+    reset_url = f"{base_url}/redefinir-senha?token={token}"
     
     # Template HTML do E-mail
     html = f"""
@@ -627,7 +642,7 @@ def esqueci_senha():
         <p style="font-size: 13px; color: #666;">Se você não solicitou este e-mail, nenhuma ação extra é necessária. Sua senha continuará a mesma e 100% segura. O token de recuperação irá expirar em 60 minutos.</p>
         
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 30px 0;" />
-        <p style="font-size: 12px; color: #999; text-align: center;">Operado pela Plataforma CRM Engetch • Segurança B2B em Nuvem</p>
+        <p style="font-size: 12px; color: #999; text-align: center;">Operado pela Plataforma Apex CRM • Segurança B2B em Nuvem</p>
     </div>
     """
     
@@ -668,8 +683,11 @@ def redefinir_senha():
     
     if not usuario_id or not schema:
         return jsonify({'erro': 'Token inconsistente.'}), 400
-        
-    # Prepara o contexto do Workspace extraído do Token  
+
+    if not re.match(r'^[a-z_][a-z0-9_]*$', schema):
+        return jsonify({'erro': 'Token inconsistente.'}), 400
+
+    # Prepara o contexto do Workspace extraído do Token
     db.session.execute(text(f"SET search_path TO {schema}, public"))
     
     usuario = Usuario.query.get(usuario_id)

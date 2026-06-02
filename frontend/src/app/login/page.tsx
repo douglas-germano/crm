@@ -69,14 +69,14 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm shadow-2xl border-0">
         <CardHeader className="text-center pb-2">
           <CardTitle className="font-display text-3xl tracking-tight text-foreground">
-            ENGETCH
+            APEX
           </CardTitle>
           <p className="text-sm text-muted-foreground tracking-wide">
-            Engenharia Mecanica
+            CRM Platform
           </p>
 
           <div className="flex justify-center pt-3 pb-1">
-            <div className="w-12 h-0.5 bg-engetch-orange" />
+            <div className="w-12 h-0.5 bg-apex-orange" />
           </div>
 
           <CardDescription className="text-base font-medium pt-1">
@@ -101,7 +101,7 @@ export default function LoginPage() {
                 onChange={(e) => setWorkspace(e.target.value.toLowerCase())}
                 required
                 autoComplete="off"
-                placeholder="ex: engetch"
+                placeholder="ex: apex"
               />
             </div>
 

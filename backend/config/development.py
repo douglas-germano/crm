@@ -17,9 +17,12 @@ JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 CORS_ORIGINS = '*'
 
 # Master Super Admin Workspace
-MASTER_WORKSPACE = os.environ.get('MASTER_WORKSPACE', 'engetch')
+MASTER_WORKSPACE = os.environ.get('MASTER_WORKSPACE', 'apex')
+
+# Frontend URL (usado em e-mails de recuperação de senha)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 
 # Email Settings (Brevo)
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY', 'your-brevo-api-key-here')
-MAIL_DEFAULT_SENDER_NAME = os.environ.get('MAIL_DEFAULT_SENDER_NAME', 'CRM Engetch')
-MAIL_DEFAULT_SENDER_EMAIL = os.environ.get('MAIL_DEFAULT_SENDER_EMAIL', 'suporte@engetch.com.br')
+MAIL_DEFAULT_SENDER_NAME = os.environ.get('MAIL_DEFAULT_SENDER_NAME', 'Apex CRM')
+MAIL_DEFAULT_SENDER_EMAIL = os.environ.get('MAIL_DEFAULT_SENDER_EMAIL', 'suporte@apexcrm.com.br')

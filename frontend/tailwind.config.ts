@@ -44,7 +44,7 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Engetch brand
+        // Apex brand
         brand: {
           50: "#eef4fb",
           100: "#d4e3f5",
@@ -71,10 +71,12 @@ const config: Config = {
           900: "#23272d",
           950: "#14161a",
         },
-        engetch: {
-          orange: "#e87c1e",
-          blue: "#1e3a5f",
+        apex: {
+          orange: '#e87c1e',
+          blue: '#1e3a5f',
         },
+        // Classes de opacidade usadas no sidebar
+        // (white/8 não existe por padrão no Tailwind)
       },
       borderRadius: {
         lg: "var(--radius)",

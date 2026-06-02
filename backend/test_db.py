@@ -10,6 +10,6 @@ with app.app_context():
     tenants = db.session.execute(text("SELECT * FROM tenant")).fetchall()
     print(f'Tenants em public: {tenants}')
 
-    db.session.execute(text("SET search_path TO engetch, public"))
-    tables = db.session.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'engetch'")).fetchall()
-    print(f'Tabelas em engetch: {[t[0] for t in tables]}')
+    db.session.execute(text("SET search_path TO apex, public"))
+    tables = db.session.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'apex'")).fetchall()
+    print(f'Tabelas em apex: {[t[0] for t in tables]}')

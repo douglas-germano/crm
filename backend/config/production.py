@@ -13,4 +13,7 @@ JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
 JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
 # CORS
-CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',') 
+CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')
+
+# Frontend URL (usado em e-mails de recuperação de senha)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://app.apexcrm.com.br')

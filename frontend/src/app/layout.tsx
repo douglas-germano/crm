@@ -3,8 +3,8 @@ import { AuthProvider } from '@/contexts/auth-context';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Engetch CRM - Engenharia Mecânica',
-  description: 'Sistema de Gestão de Relacionamento com Clientes - Engetch Engenharia Mecânica',
+  title: 'Apex CRM',
+  description: 'Sistema de Gestão de Relacionamento com Clientes - Apex',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -87,7 +87,12 @@ def create_app(config_name='development'):
             verify_jwt_in_request(optional=True)
             claims = get_jwt()
             if claims and 'schema' in claims:
-                db.session.execute(text(f"SET search_path TO {claims['schema']}, public"))
+                import re
+                schema = claims['schema']
+                if not re.match(r'^[a-z_][a-z0-9_]*$', schema):
+                    from flask import abort
+                    abort(400)
+                db.session.execute(text(f"SET search_path TO {schema}, public"))
         except Exception as e:
             # Em caso de erro com token, ignora e deixa o decorador da rota lidar
             pass

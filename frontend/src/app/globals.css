@@ -22,14 +22,19 @@
     --secondary-foreground: 215 14% 30%;
     --muted: 210 11% 95%;
     --muted-foreground: 215 8% 47%;
-    --accent: 25 81% 52%;
-    --accent-foreground: 0 0% 100%;
+    /* accent é usado para destaques de cor (laranja), NÃO para hover de superfície */
+    --accent: 210 11% 93%;
+    --accent-foreground: 215 14% 30%;
+    --engetch-orange: 25 81% 52%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 210 14% 89%;
     --input: 210 14% 89%;
-    --ring: 25 81% 52%;
-    --radius: 0.5rem;
+    --ring: 213 53% 24%;
+    --radius: 0.625rem;
+    /* Sombra padrão para cards — mais expressiva que shadow-sm */
+    --card-shadow: 0 1px 3px rgba(30, 58, 95, 0.06), 0 1px 8px rgba(30, 58, 95, 0.04);
+    --card-shadow-hover: 0 4px 12px rgba(30, 58, 95, 0.10), 0 1px 3px rgba(30, 58, 95, 0.06);
   }
 
   * {
@@ -89,5 +94,16 @@
 .stagger-children > *:nth-child(2) { animation-delay: 0.08s; }
 .stagger-children > *:nth-child(3) { animation-delay: 0.12s; }
 .stagger-children > *:nth-child(4) { animation-delay: 0.16s; }
-.stagger-children > *:nth-child(5) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.20s; }
 .stagger-children > *:nth-child(6) { animation-delay: 0.24s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.28s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.32s; }
+
+/* Engetch orange utility classes */
+.bg-engetch-orange\/10 { background-color: rgba(232, 124, 30, 0.10); }
+.bg-engetch-orange\/15 { background-color: rgba(232, 124, 30, 0.15); }
+.text-engetch-orange   { color: #e87c1e; }
+.border-engetch-orange { border-color: #e87c1e; }
+
+/* Sidebar nav hover (white/8 não é gerado por padrão) */
+.hover\:bg-white\/8:hover { background-color: rgba(255, 255, 255, 0.08); }

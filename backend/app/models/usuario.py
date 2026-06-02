@@ -42,6 +42,7 @@ class Usuario(db.Model, UserMixin):
             'uuid': self.uuid,
             'nome': self.nome,
             'email': self.email,
+            'perfil_id': self.perfil_id,
             'perfil': self.perfil.nome,
             'ativo': self.ativo,
             'deve_trocar_senha': self.deve_trocar_senha,

@@ -81,7 +81,7 @@ export default function EsqueciSenhaPage() {
                   value={workspace}
                   onChange={(e) => setWorkspace(e.target.value.toLowerCase())}
                   required
-                  placeholder="ex: engetch"
+                  placeholder="ex: apex"
                 />
               </div>
 
