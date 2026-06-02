@@ -59,6 +59,8 @@ def create_app(config_name=None):
     from app.blueprints.projetos import projetos_bp
     from app.blueprints.tenants import tenants_bp
     from app.blueprints.admin import admin_bp
+    from app.blueprints.ativos import ativos_bp
+    from app.blueprints.inspecoes import inspecoes_bp
 
     app.register_blueprint(usuarios_bp, url_prefix='/api/usuarios')
     app.register_blueprint(tenants_bp, url_prefix='/api/tenants')
@@ -70,6 +72,8 @@ def create_app(config_name=None):
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(projetos_bp, url_prefix='/api/projetos')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(ativos_bp, url_prefix='/api/ativos')
+    app.register_blueprint(inspecoes_bp, url_prefix='/api/inspecoes')
 
     @app.get('/api/health')
     def health_check():

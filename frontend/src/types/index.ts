@@ -202,3 +202,89 @@ export interface PaginatedResponse<T> {
   per_page: number;
   [key: string]: T[] | number;
 }
+
+export interface Ativo {
+  id: number;
+  uuid: string;
+  nome: string;
+  tag_identificacao: string;
+  categoria: 'hvac' | 'nr12' | 'nr13' | 'outro';
+  fabricante?: string;
+  modelo?: string;
+  numero_serie?: string;
+  dados_tecnicos?: Record<string, any>;
+  localizacao?: string;
+  data_instalacao?: string;
+  status: 'ativo' | 'inativo' | 'manutencao';
+  empresa_id: number;
+  empresa_nome?: string;
+  data_criacao: string;
+  data_atualizacao: string;
+}
+
+export interface ContratoAMC {
+  id: number;
+  uuid: string;
+  titulo: string;
+  plano: 'mensal' | 'trimestral' | 'semestral' | 'anual';
+  valor_recorrente: number;
+  data_inicio: string;
+  data_fim?: string;
+  status: 'ativo' | 'suspenso' | 'cancelado' | 'finalizado';
+  empresa_id: number;
+  empresa_nome?: string;
+  data_criacao: string;
+  data_atualizacao: string;
+}
+
+export interface ItemChecklist {
+  id: number;
+  pergunta: string;
+  criticidade: 'baixa' | 'media' | 'alta';
+}
+
+export interface TemplateChecklist {
+  id: number;
+  uuid: string;
+  nome: string;
+  regulacao: 'pmoc' | 'nr12' | 'nr13' | 'outro';
+  versao: string;
+  itens: ItemChecklist[];
+  ativo: boolean;
+  data_criacao: string;
+  data_atualizacao: string;
+}
+
+export interface RespostaInspecao {
+  pergunta_id: number;
+  resposta: 'conforme' | 'nao_conforme' | 'nao_se_aplica';
+  observacao?: string;
+  foto_url?: string;
+}
+
+export interface Inspecao {
+  id: number;
+  uuid: string;
+  data_inspecao: string;
+  data_realizacao?: string;
+  status: 'agendada' | 'em_campo' | 'concluida' | 'cancelada';
+  respostas?: RespostaInspecao[];
+  observacoes_gerais?: string;
+  art_numero?: string;
+  art_pdf_url?: string;
+  pdf_laudo_url?: string;
+  ativo_id: number;
+  ativo_nome?: string;
+  ativo_tag?: string;
+  ativo_empresa_id?: number;
+  ativo_empresa_nome?: string;
+  template_id: number;
+  template_nome?: string;
+  contrato_amc_id?: number;
+  contrato_amc_titulo?: string;
+  inspetor_id?: number;
+  inspetor_nome?: string;
+  data_criacao: string;
+  data_atualizacao: string;
+}
+
