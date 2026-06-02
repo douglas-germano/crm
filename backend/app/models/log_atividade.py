@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 
 class LogAtividade(db.Model):
     __tablename__ = 'logs_atividade'
@@ -9,7 +9,7 @@ class LogAtividade(db.Model):
     acao = db.Column(db.String(100), nullable=False)
     modulo = db.Column(db.String(50), nullable=False)
     descricao = db.Column(db.Text)
-    data_hora = db.Column(db.DateTime, default=datetime.utcnow)
+    data_hora = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     ip = db.Column(db.String(50))
     
     # Relacionamentos

@@ -7,7 +7,7 @@ from app.models.empresa import Empresa
 from app.models.usuario import Usuario
 from app.utils.decorators import token_required
 from app.utils.validadores import validar_campos
-from datetime import datetime
+from datetime import datetime, timezone
 import traceback
 
 from app.blueprints.projetos import projetos_bp
@@ -16,10 +16,8 @@ from app.blueprints.projetos import projetos_bp
 # ─── PROJETOS ────────────────────────────────────────────────────────────────
 
 @projetos_bp.route('', methods=['GET'])
-@projetos_bp.route('/', methods=['GET'])
 @token_required
 def listar_projetos(usuario_atual):
-    """Lista todos os projetos com filtros opcionais."""
     try:
         status = request.args.get('status')
         prioridade = request.args.get('prioridade')
@@ -53,9 +51,8 @@ def listar_projetos(usuario_atual):
 @projetos_bp.route('/<int:projeto_id>', methods=['GET'])
 @token_required
 def obter_projeto(usuario_atual, projeto_id):
-    """Obtém detalhes de um projeto."""
     try:
-        projeto = Projeto.query.get(projeto_id)
+        projeto = db.session.get(Projeto, projeto_id)
         if not projeto:
             return jsonify({"erro": "Projeto não encontrado"}), 404
 
@@ -67,10 +64,8 @@ def obter_projeto(usuario_atual, projeto_id):
 
 
 @projetos_bp.route('', methods=['POST'])
-@projetos_bp.route('/', methods=['POST'])
 @token_required
 def criar_projeto(usuario_atual):
-    """Cria um novo projeto."""
     try:
         dados = request.json
 
@@ -79,17 +74,16 @@ def criar_projeto(usuario_atual):
         if mensagens_erro:
             return jsonify({"erro": "Campos obrigatórios ausentes", "campos": mensagens_erro}), 400
 
-        # Validar relações opcionais
         if dados.get('negocio_id'):
-            if not Negocio.query.get(dados['negocio_id']):
+            if not db.session.get(Negocio, dados['negocio_id']):
                 return jsonify({"erro": "Negócio não encontrado"}), 404
 
         if dados.get('empresa_id'):
-            if not Empresa.query.get(dados['empresa_id']):
+            if not db.session.get(Empresa, dados['empresa_id']):
                 return jsonify({"erro": "Empresa não encontrada"}), 404
 
         if dados.get('gerente_id'):
-            if not Usuario.query.get(dados['gerente_id']):
+            if not db.session.get(Usuario, dados['gerente_id']):
                 return jsonify({"erro": "Gerente não encontrado"}), 404
 
         projeto = Projeto(
@@ -121,10 +115,9 @@ def criar_projeto(usuario_atual):
 @projetos_bp.route('/<int:projeto_id>', methods=['PUT'])
 @token_required
 def atualizar_projeto(usuario_atual, projeto_id):
-    """Atualiza um projeto existente."""
     try:
         dados = request.json
-        projeto = Projeto.query.get(projeto_id)
+        projeto = db.session.get(Projeto, projeto_id)
         if not projeto:
             return jsonify({"erro": "Projeto não encontrado"}), 404
 
@@ -141,28 +134,22 @@ def atualizar_projeto(usuario_atual, projeto_id):
             projeto.data_fim = datetime.fromisoformat(dados['data_fim']).date() if dados['data_fim'] else None
 
         if 'gerente_id' in dados:
-            if dados['gerente_id'] and not Usuario.query.get(dados['gerente_id']):
+            if dados['gerente_id'] and not db.session.get(Usuario, dados['gerente_id']):
                 return jsonify({"erro": "Gerente não encontrado"}), 404
             projeto.gerente_id = dados['gerente_id']
 
         if 'empresa_id' in dados:
-            if dados['empresa_id'] and not Empresa.query.get(dados['empresa_id']):
+            if dados['empresa_id'] and not db.session.get(Empresa, dados['empresa_id']):
                 return jsonify({"erro": "Empresa não encontrada"}), 404
             projeto.empresa_id = dados['empresa_id']
 
         if 'negocio_id' in dados:
-            if dados['negocio_id'] and not Negocio.query.get(dados['negocio_id']):
+            if dados['negocio_id'] and not db.session.get(Negocio, dados['negocio_id']):
                 return jsonify({"erro": "Negócio não encontrado"}), 404
             projeto.negocio_id = dados['negocio_id']
 
-        if 'empresa_id' in dados:
-            if dados['empresa_id'] and not Empresa.query.get(dados['empresa_id']):
-                return jsonify({"erro": "Empresa não encontrada"}), 404
-            projeto.empresa_id = dados['empresa_id']
-
-        # Se marcou como concluído, registrar data_fim
         if dados.get('status') == 'concluido' and projeto.status != 'concluido':
-            projeto.data_fim = datetime.utcnow().date()
+            projeto.data_fim = datetime.now(timezone.utc).date()
 
         db.session.commit()
 
@@ -177,9 +164,8 @@ def atualizar_projeto(usuario_atual, projeto_id):
 @projetos_bp.route('/<int:projeto_id>', methods=['DELETE'])
 @token_required
 def excluir_projeto(usuario_atual, projeto_id):
-    """Exclui um projeto e todas as suas tarefas."""
     try:
-        projeto = Projeto.query.get(projeto_id)
+        projeto = db.session.get(Projeto, projeto_id)
         if not projeto:
             return jsonify({"erro": "Projeto não encontrado"}), 404
 
@@ -197,7 +183,6 @@ def excluir_projeto(usuario_atual, projeto_id):
 @projetos_bp.route('/estatisticas', methods=['GET'])
 @token_required
 def obter_estatisticas(usuario_atual):
-    """Estatísticas gerais de projetos."""
     try:
         from sqlalchemy import func
 
@@ -228,13 +213,11 @@ def obter_estatisticas(usuario_atual):
 @projetos_bp.route('/<int:projeto_id>/tarefas', methods=['GET'])
 @token_required
 def listar_tarefas(usuario_atual, projeto_id):
-    """Lista tarefas de um projeto."""
     try:
-        projeto = Projeto.query.get(projeto_id)
+        projeto = db.session.get(Projeto, projeto_id)
         if not projeto:
             return jsonify({"erro": "Projeto não encontrado"}), 404
 
-        # Somente tarefas raiz (não subtarefas)
         tarefas = Tarefa.query.filter_by(
             projeto_id=projeto_id,
             tarefa_pai_id=None
@@ -250,11 +233,10 @@ def listar_tarefas(usuario_atual, projeto_id):
 @projetos_bp.route('/<int:projeto_id>/tarefas', methods=['POST'])
 @token_required
 def criar_tarefa(usuario_atual, projeto_id):
-    """Cria uma nova tarefa no projeto."""
     try:
         dados = request.json
 
-        projeto = Projeto.query.get(projeto_id)
+        projeto = db.session.get(Projeto, projeto_id)
         if not projeto:
             return jsonify({"erro": "Projeto não encontrado"}), 404
 
@@ -263,7 +245,6 @@ def criar_tarefa(usuario_atual, projeto_id):
         if mensagens_erro:
             return jsonify({"erro": "Campos obrigatórios ausentes", "campos": mensagens_erro}), 400
 
-        # Calcular ordem (última posição no status)
         max_ordem = db.session.query(db.func.max(Tarefa.ordem)).filter_by(
             projeto_id=projeto_id,
             status=dados.get('status', 'a_fazer')
@@ -284,7 +265,6 @@ def criar_tarefa(usuario_atual, projeto_id):
 
         db.session.add(tarefa)
 
-        # Criar itens de checklist se fornecidos
         if dados.get('checklist'):
             for i, item_texto in enumerate(dados['checklist']):
                 item = ChecklistItem(
@@ -297,7 +277,6 @@ def criar_tarefa(usuario_atual, projeto_id):
 
         db.session.commit()
 
-        # Atualizar percentual do projeto
         projeto.atualizar_percentual()
         db.session.commit()
 
@@ -313,7 +292,6 @@ def criar_tarefa(usuario_atual, projeto_id):
 @projetos_bp.route('/<int:projeto_id>/tarefas/<int:tarefa_id>', methods=['PUT'])
 @token_required
 def atualizar_tarefa(usuario_atual, projeto_id, tarefa_id):
-    """Atualiza uma tarefa."""
     try:
         dados = request.json
 
@@ -333,16 +311,14 @@ def atualizar_tarefa(usuario_atual, projeto_id, tarefa_id):
         if 'responsavel_id' in dados:
             tarefa.responsavel_id = dados['responsavel_id']
 
-        # Se marcou como concluída, registrar data
         if dados.get('status') == 'concluida' and tarefa.status != 'concluida':
-            tarefa.data_conclusao = datetime.utcnow()
+            tarefa.data_conclusao = datetime.now(timezone.utc)
         elif dados.get('status') and dados['status'] != 'concluida':
             tarefa.data_conclusao = None
 
         db.session.commit()
 
-        # Atualizar percentual do projeto
-        projeto = Projeto.query.get(projeto_id)
+        projeto = db.session.get(Projeto, projeto_id)
         if projeto:
             projeto.atualizar_percentual()
             db.session.commit()
@@ -358,7 +334,6 @@ def atualizar_tarefa(usuario_atual, projeto_id, tarefa_id):
 @projetos_bp.route('/<int:projeto_id>/tarefas/<int:tarefa_id>', methods=['DELETE'])
 @token_required
 def excluir_tarefa(usuario_atual, projeto_id, tarefa_id):
-    """Exclui uma tarefa."""
     try:
         tarefa = Tarefa.query.filter_by(id=tarefa_id, projeto_id=projeto_id).first()
         if not tarefa:
@@ -367,8 +342,7 @@ def excluir_tarefa(usuario_atual, projeto_id, tarefa_id):
         db.session.delete(tarefa)
         db.session.commit()
 
-        # Atualizar percentual do projeto
-        projeto = Projeto.query.get(projeto_id)
+        projeto = db.session.get(Projeto, projeto_id)
         if projeto:
             projeto.atualizar_percentual()
             db.session.commit()
@@ -384,12 +358,10 @@ def excluir_tarefa(usuario_atual, projeto_id, tarefa_id):
 @projetos_bp.route('/<int:projeto_id>/tarefas/reordenar', methods=['PUT'])
 @token_required
 def reordenar_tarefas(usuario_atual, projeto_id):
-    """Reordena tarefas (usado no drag & drop do Kanban)."""
     try:
         dados = request.json
-        # Formato esperado: { tarefas: [{ id: 1, status: 'em_andamento', ordem: 0 }, ...] }
 
-        projeto = Projeto.query.get(projeto_id)
+        projeto = db.session.get(Projeto, projeto_id)
         if not projeto:
             return jsonify({"erro": "Projeto não encontrado"}), 404
 
@@ -399,15 +371,13 @@ def reordenar_tarefas(usuario_atual, projeto_id):
                 tarefa.status = item.get('status', tarefa.status)
                 tarefa.ordem = item.get('ordem', tarefa.ordem)
 
-                # Registrar conclusão se mudou para concluída
                 if item.get('status') == 'concluida' and tarefa.data_conclusao is None:
-                    tarefa.data_conclusao = datetime.utcnow()
+                    tarefa.data_conclusao = datetime.now(timezone.utc)
                 elif item.get('status') and item['status'] != 'concluida':
                     tarefa.data_conclusao = None
 
         db.session.commit()
 
-        # Atualizar percentual do projeto
         projeto.atualizar_percentual()
         db.session.commit()
 
@@ -424,7 +394,6 @@ def reordenar_tarefas(usuario_atual, projeto_id):
 @projetos_bp.route('/<int:projeto_id>/tarefas/<int:tarefa_id>/checklist', methods=['PUT'])
 @token_required
 def atualizar_checklist(usuario_atual, projeto_id, tarefa_id):
-    """Substitui a checklist de uma tarefa."""
     try:
         dados = request.json
 
@@ -432,10 +401,8 @@ def atualizar_checklist(usuario_atual, projeto_id, tarefa_id):
         if not tarefa:
             return jsonify({"erro": "Tarefa não encontrada"}), 404
 
-        # Remover itens existentes
         ChecklistItem.query.filter_by(tarefa_id=tarefa_id).delete()
 
-        # Criar novos itens
         for i, item_data in enumerate(dados.get('items', [])):
             item = ChecklistItem(
                 descricao=item_data.get('descricao', ''),
@@ -460,7 +427,6 @@ def atualizar_checklist(usuario_atual, projeto_id, tarefa_id):
 @projetos_bp.route('/<int:projeto_id>/tarefas/<int:tarefa_id>/comentarios', methods=['GET'])
 @token_required
 def listar_comentarios(usuario_atual, projeto_id, tarefa_id):
-    """Lista comentários de uma tarefa."""
     try:
         tarefa = Tarefa.query.filter_by(id=tarefa_id, projeto_id=projeto_id).first()
         if not tarefa:
@@ -480,7 +446,6 @@ def listar_comentarios(usuario_atual, projeto_id, tarefa_id):
 @projetos_bp.route('/<int:projeto_id>/tarefas/<int:tarefa_id>/comentarios', methods=['POST'])
 @token_required
 def criar_comentario(usuario_atual, projeto_id, tarefa_id):
-    """Adiciona um comentário a uma tarefa."""
     try:
         dados = request.json
 
@@ -513,7 +478,6 @@ def criar_comentario(usuario_atual, projeto_id, tarefa_id):
 @projetos_bp.route('/<int:projeto_id>/tarefas/<int:tarefa_id>/comentarios/<int:comentario_id>', methods=['DELETE'])
 @token_required
 def excluir_comentario(usuario_atual, projeto_id, tarefa_id, comentario_id):
-    """Exclui um comentário."""
     try:
         comentario = ComentarioTarefa.query.filter_by(
             id=comentario_id,
@@ -523,7 +487,6 @@ def excluir_comentario(usuario_atual, projeto_id, tarefa_id, comentario_id):
         if not comentario:
             return jsonify({"erro": "Comentário não encontrado"}), 404
 
-        # Somente o autor pode excluir
         if comentario.autor_id != usuario_atual.id:
             return jsonify({"erro": "Você não pode excluir este comentário"}), 403
 

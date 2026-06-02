@@ -8,8 +8,9 @@ from app.models.empresa import Empresa
 from app.blueprints.inspecoes import inspecoes_bp
 from app.utils.decorators import token_required
 from app.utils.pdf_generator import gerar_pdf_laudo
-from datetime import datetime, date
+from datetime import datetime, timezone, date
 import io
+
 
 # ─── TEMPLATES CHECKLIST ──────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ def criar_contrato_amc(usuario_atual):
             if not dados.get(campo):
                 return jsonify({'erro': f'O campo {campo} é obrigatório'}), 400
 
-        empresa = Empresa.query.get(dados['empresa_id'])
+        empresa = db.session.get(Empresa, dados['empresa_id'])
         if not empresa:
             return jsonify({'erro': 'Empresa associada não encontrada'}), 404
 
@@ -114,7 +115,6 @@ def criar_contrato_amc(usuario_atual):
 # ─── INSPEÇÕES ────────────────────────────────────────────────────────────────
 
 @inspecoes_bp.route('', methods=['GET'])
-@inspecoes_bp.route('/', methods=['GET'])
 @token_required
 def listar_inspecoes(usuario_atual):
     try:
@@ -145,7 +145,7 @@ def listar_inspecoes(usuario_atual):
 @token_required
 def obter_inspecao(usuario_atual, inspecao_id):
     try:
-        inspecao = Inspecao.query.get(inspecao_id)
+        inspecao = db.session.get(Inspecao, inspecao_id)
         if not inspecao:
             return jsonify({'erro': 'Inspeção não encontrada'}), 404
         return jsonify(inspecao.to_dict()), 200
@@ -155,7 +155,6 @@ def obter_inspecao(usuario_atual, inspecao_id):
 
 
 @inspecoes_bp.route('', methods=['POST'])
-@inspecoes_bp.route('/', methods=['POST'])
 @token_required
 def agendar_inspecao(usuario_atual):
     try:
@@ -165,17 +164,16 @@ def agendar_inspecao(usuario_atual):
             if not dados.get(campo):
                 return jsonify({'erro': f'O campo {campo} é obrigatório'}), 400
 
-        # Validar existências
-        ativo = Ativo.query.get(dados['ativo_id'])
+        ativo = db.session.get(Ativo, dados['ativo_id'])
         if not ativo:
             return jsonify({'erro': 'Ativo associado não encontrado'}), 404
 
-        template = TemplateChecklist.query.get(dados['template_id'])
+        template = db.session.get(TemplateChecklist, dados['template_id'])
         if not template:
             return jsonify({'erro': 'Template de checklist não encontrado'}), 404
 
         if dados.get('contrato_amc_id'):
-            contrato = ContratoAMC.query.get(dados['contrato_amc_id'])
+            contrato = db.session.get(ContratoAMC, dados['contrato_amc_id'])
             if not contrato:
                 return jsonify({'erro': 'Contrato AMC não encontrado'}), 404
 
@@ -202,7 +200,7 @@ def agendar_inspecao(usuario_atual):
 @token_required
 def preencher_checklist_campo(usuario_atual, inspecao_id):
     try:
-        inspecao = Inspecao.query.get(inspecao_id)
+        inspecao = db.session.get(Inspecao, inspecao_id)
         if not inspecao:
             return jsonify({'erro': 'Inspeção não encontrada'}), 404
 
@@ -214,7 +212,7 @@ def preencher_checklist_campo(usuario_atual, inspecao_id):
         inspecao.observacoes_gerais = dados.get('observacoes_gerais', '')
         inspecao.art_numero = dados.get('art_numero', inspecao.art_numero)
         inspecao.status = 'concluida'
-        inspecao.data_realizacao = datetime.utcnow()
+        inspecao.data_realizacao = datetime.now(timezone.utc)
         inspecao.inspetor_id = usuario_atual.id
 
         db.session.commit()
@@ -231,16 +229,15 @@ def preencher_checklist_campo(usuario_atual, inspecao_id):
 @token_required
 def obter_pdf_laudo(usuario_atual, inspecao_id):
     try:
-        inspecao = Inspecao.query.get(inspecao_id)
+        inspecao = db.session.get(Inspecao, inspecao_id)
         if not inspecao:
             return jsonify({'erro': 'Inspeção não encontrada'}), 404
 
         if inspecao.status != 'concluida':
             return jsonify({'erro': 'Não é possível baixar laudo de inspeção não concluída'}), 400
 
-        # Gerar o PDF na memória (Buffer BytesIO)
         pdf_buffer = gerar_pdf_laudo(inspecao)
-        
+
         return send_file(
             pdf_buffer,
             mimetype='application/pdf',

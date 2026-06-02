@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Tabela de associação entre perfis e permissões
 perfil_permissao = db.Table(
@@ -14,7 +14,7 @@ class Perfil(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(50), unique=True, nullable=False)
     descricao = db.Column(db.String(200))
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relacionamentos
     permissoes = db.relationship('Permissao', secondary=perfil_permissao, lazy='subquery',

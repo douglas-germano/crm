@@ -6,8 +6,8 @@ from app.blueprints.ativos import ativos_bp
 from app.utils.decorators import token_required
 from datetime import datetime
 
+
 @ativos_bp.route('', methods=['GET'])
-@ativos_bp.route('/', methods=['GET'])
 @token_required
 def listar_ativos(usuario_atual):
     try:
@@ -35,7 +35,7 @@ def listar_ativos(usuario_atual):
 @token_required
 def obter_ativo(usuario_atual, ativo_id):
     try:
-        ativo = Ativo.query.get(ativo_id)
+        ativo = db.session.get(Ativo, ativo_id)
         if not ativo:
             return jsonify({'erro': 'Ativo não encontrado'}), 404
         return jsonify(ativo.to_dict()), 200
@@ -45,20 +45,17 @@ def obter_ativo(usuario_atual, ativo_id):
 
 
 @ativos_bp.route('', methods=['POST'])
-@ativos_bp.route('/', methods=['POST'])
 @token_required
 def criar_ativo(usuario_atual):
     try:
         dados = request.get_json()
-        
-        # Validar campos obrigatórios
+
         campos_obrigatorios = ['nome', 'tag_identificacao', 'empresa_id']
         for campo in campos_obrigatorios:
             if not dados.get(campo):
                 return jsonify({'erro': f'O campo {campo} é obrigatório'}), 400
 
-        # Validar se empresa existe
-        empresa = Empresa.query.get(dados['empresa_id'])
+        empresa = db.session.get(Empresa, dados['empresa_id'])
         if not empresa:
             return jsonify({'erro': 'Empresa associada não encontrada'}), 404
 
@@ -89,13 +86,12 @@ def criar_ativo(usuario_atual):
 @token_required
 def atualizar_ativo(usuario_atual, ativo_id):
     try:
-        ativo = Ativo.query.get(ativo_id)
+        ativo = db.session.get(Ativo, ativo_id)
         if not ativo:
             return jsonify({'erro': 'Ativo não encontrado'}), 404
 
         dados = request.get_json()
 
-        # Atualizar campos simples
         campos_simples = ['nome', 'tag_identificacao', 'categoria', 'fabricante', 'modelo', 'numero_serie', 'dados_tecnicos', 'localizacao', 'status']
         for campo in campos_simples:
             if campo in dados:
@@ -105,7 +101,7 @@ def atualizar_ativo(usuario_atual, ativo_id):
             ativo.data_instalacao = datetime.fromisoformat(dados['data_instalacao']).date() if dados['data_instalacao'] else None
 
         if 'empresa_id' in dados:
-            empresa = Empresa.query.get(dados['empresa_id'])
+            empresa = db.session.get(Empresa, dados['empresa_id'])
             if not empresa:
                 return jsonify({'erro': 'Empresa associada não encontrada'}), 404
             ativo.empresa_id = dados['empresa_id']
@@ -122,7 +118,7 @@ def atualizar_ativo(usuario_atual, ativo_id):
 @token_required
 def excluir_ativo(usuario_atual, ativo_id):
     try:
-        ativo = Ativo.query.get(ativo_id)
+        ativo = db.session.get(Ativo, ativo_id)
         if not ativo:
             return jsonify({'erro': 'Ativo não encontrado'}), 404
 

@@ -4,7 +4,6 @@ from datetime import timedelta
 # Configurações básicas
 DEBUG = True
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-CHANGE-ME')
-_db_path = None
 SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///crm.sqlite')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 

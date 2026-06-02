@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 class Inspecao(db.Model):
@@ -37,8 +37,8 @@ class Inspecao(db.Model):
     criado_por_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
     criado_por = db.relationship('Usuario', foreign_keys=[criado_por_id])
 
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {

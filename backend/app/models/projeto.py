@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 
@@ -44,8 +44,8 @@ class Projeto(db.Model):
                                  backref=db.backref('projetos_criados', lazy='dynamic'))
 
     # Rastreamento
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def calcular_percentual(self):
         """Calcula o percentual de conclusão baseado nas tarefas (apenas tarefas raiz)."""

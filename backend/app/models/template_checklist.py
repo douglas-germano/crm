@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 class TemplateChecklist(db.Model):
@@ -13,8 +13,8 @@ class TemplateChecklist(db.Model):
     itens = db.Column(db.JSON)  # Lista de itens do checklist (ex: [{'id': 1, 'pergunta': 'Texto', 'criticidade': 'alta'}])
     ativo = db.Column(db.Boolean, default=True)
 
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {

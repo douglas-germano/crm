@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 class Pipeline(db.Model):
@@ -10,9 +10,9 @@ class Pipeline(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     descricao = db.Column(db.Text)
     ativo = db.Column(db.Boolean, default=True)
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
     # Relacionamentos
     estagios = db.relationship('Estagio', back_populates='pipeline', order_by='Estagio.ordem', cascade='all, delete-orphan')
     
@@ -69,12 +69,11 @@ class Pipeline(db.Model):
                 
                 db.session.add(pipeline_padrao)
                 db.session.commit()
-                
-                print("Pipeline padrão criado com sucesso!")
                 return pipeline_padrao
             except Exception as e:
                 db.session.rollback()
-                print(f"Erro ao criar pipeline padrão: {str(e)}")
+                from flask import current_app
+                current_app.logger.error(f"Erro ao criar pipeline padrão: {str(e)}")
                 return None
         
         return None
@@ -92,9 +91,9 @@ class Estagio(db.Model):
     cor = db.Column(db.String(20), default='#3498db')  # Cor padrão azul
     ordem = db.Column(db.Integer, nullable=False)
     pipeline_id = db.Column(db.Integer, db.ForeignKey('pipelines.id'), nullable=False)
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
     # Relacionamentos
     pipeline = db.relationship('Pipeline', back_populates='estagios')
     lead_estagios = db.relationship('LeadEstagio', back_populates='estagio', cascade='all, delete-orphan')
@@ -122,8 +121,8 @@ class LeadEstagio(db.Model):
     lead_id = db.Column(db.Integer, db.ForeignKey('leads.id'), nullable=False)
     estagio_id = db.Column(db.Integer, db.ForeignKey('estagios.id'), nullable=False)
     posicao = db.Column(db.Integer, nullable=False, default=0)  # Posição dentro do estágio
-    data_entrada = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_entrada = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relacionamentos
     lead = db.relationship('Lead')
