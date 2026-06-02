@@ -146,10 +146,11 @@ export default function EmpresasPage() {
       setForm({ ...EMPTY_FORM })
       closeModal()
       mutate()
-    } catch (err: any) {
-      const msg = err?.response?.data?.erro
-        || err?.response?.data?.message
-        || err?.response?.data?.msg
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string; message?: string; msg?: string } } }
+      const msg = error.response?.data?.erro
+        || error.response?.data?.message
+        || error.response?.data?.msg
         || 'Erro ao salvar empresa. Tente novamente.'
       setApiError(msg)
     } finally {
@@ -166,7 +167,7 @@ export default function EmpresasPage() {
       setShowContatoForm(null)
       mutateExpanded()
       mutate()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
     } finally {
       setContatoLoading(false)

@@ -118,10 +118,11 @@ export default function ProjetosPage() {
     fetcher
   )
 
-  const { data: empresas = [] } = useSWR('/api/empresas', fetcher)
+  const { data: empresasResp } = useSWR('/api/empresas?per_page=100', fetcher)
   const { data: usuariosData } = useSWR('/api/usuarios', fetcher)
   const { data: negocios = [] } = useSWR('/api/negocios', fetcher)
-  const usuarios = usuariosData?.usuarios ?? usuariosData ?? []
+  const empresas: { id: number; razao_social: string; nome_fantasia?: string }[] = empresasResp?.empresas ?? []
+  const usuarios = usuariosData?.usuarios ?? []
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -432,8 +433,8 @@ export default function ProjetosPage() {
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhuma</SelectItem>
-                    {(Array.isArray(empresas) ? empresas : []).map((e: { id: number; razao_social: string }) => (
-                      <SelectItem key={e.id} value={String(e.id)}>{e.razao_social}</SelectItem>
+                    {empresas.map((e) => (
+                      <SelectItem key={e.id} value={String(e.id)}>{e.nome_fantasia || e.razao_social}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -450,7 +451,7 @@ export default function ProjetosPage() {
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Eu mesmo</SelectItem>
-                    {(Array.isArray(usuarios) ? usuarios : []).map((u: { id: number; nome: string }) => (
+                    {usuarios.map((u: { id: number; nome: string }) => (
                       <SelectItem key={u.id} value={String(u.id)}>{u.nome}</SelectItem>
                     ))}
                   </SelectContent>

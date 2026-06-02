@@ -33,8 +33,8 @@ interface Lead {
   observacoes: string
   status: string
   empresa_id?: number | null
-  responsavel?: { nome: string }
-  criado_em: string
+  responsavel?: string
+  data_criacao: string
 }
 
 interface Empresa {
@@ -268,8 +268,8 @@ export default function LeadsPage() {
                         {lead.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{lead.responsavel?.nome ?? '-'}</TableCell>
-                    <TableCell>{formatDate(lead.criado_em)}</TableCell>
+                    <TableCell>{lead.responsavel ?? '-'}</TableCell>
+                    <TableCell>{formatDate(lead.data_criacao)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                         <Button

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import useSWR from 'swr'
 import api from '@/lib/api'
-import { cn, formatDate } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { Plus, Loader2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -29,44 +32,64 @@ interface Usuario {
   ultimo_login: string
 }
 
+interface Perfil {
+  id: number
+  nome: string
+}
+
 export default function UsuariosPage() {
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [apiError, setApiError] = useState('')
 
   const [form, setForm] = useState({
     nome: '', email: '', senha: '', perfil_id: ''
   })
 
   const { data, mutate, isLoading } = useSWR('/api/usuarios', fetcher)
+  const { data: perfisData } = useSWR('/api/usuarios/perfis', fetcher)
 
   const usuarios: Usuario[] = data?.usuarios ?? []
+  const perfis: Perfil[] = perfisData?.perfis ?? []
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!form.perfil_id) {
+      setApiError('Selecione um perfil para o usuário')
+      return
+    }
     setLoading(true)
+    setApiError('')
     try {
       await api.post('/api/usuarios', {
         ...form,
-        perfil_id: form.perfil_id ? Number(form.perfil_id) : undefined,
+        perfil_id: Number(form.perfil_id),
       })
       setForm({ nome: '', email: '', senha: '', perfil_id: '' })
       setShowModal(false)
       mutate()
-    } catch (err) {
-      console.error(err)
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string; message?: string } } }
+      setApiError(error.response?.data?.erro || error.response?.data?.message || 'Erro ao criar usuário')
     } finally {
       setLoading(false)
     }
+  }
+
+  const closeModal = () => {
+    setShowModal(false)
+    setApiError('')
+    setForm({ nome: '', email: '', senha: '', perfil_id: '' })
   }
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Usuarios</h2>
+        <h2 className="text-xl font-semibold">Usuários</h2>
         <Button onClick={() => setShowModal(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" />
-          Novo Usuario
+          Novo Usuário
         </Button>
       </div>
 
@@ -78,7 +101,7 @@ export default function UsuariosPage() {
           </div>
         ) : usuarios.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
-            <p className="font-medium">Nenhum usuario encontrado</p>
+            <p className="font-medium">Nenhum usuário encontrado</p>
           </div>
         ) : (
           <Table>
@@ -88,7 +111,7 @@ export default function UsuariosPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Ultimo Login</TableHead>
+                <TableHead>Último Login</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -124,12 +147,17 @@ export default function UsuariosPage() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal() }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Novo Usuario</DialogTitle>
+            <DialogTitle>Novo Usuário</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
+            {apiError && (
+              <div className="px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+                {apiError}
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>Nome *</Label>
               <Input
@@ -156,8 +184,22 @@ export default function UsuariosPage() {
                 onChange={e => setForm(f => ({ ...f, senha: e.target.value }))}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label>Perfil *</Label>
+              <Select value={form.perfil_id || 'none'} onValueChange={v => setForm(f => ({ ...f, perfil_id: v === 'none' ? '' : v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um perfil..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Selecione...</SelectItem>
+                  {perfis.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+              <Button type="button" variant="outline" onClick={closeModal}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={loading}>
