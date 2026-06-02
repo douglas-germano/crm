@@ -20,11 +20,12 @@ migrate = Migrate()
 login_manager = LoginManager()
 jwt = JWTManager()
 
-def create_app(config_name='development'):
+def create_app(config_name=None):
     app = Flask(__name__)
     app.url_map.strict_slashes = False
 
     # Configuração
+    config_name = config_name or os.environ.get('FLASK_ENV') or os.environ.get('APP_ENV') or 'development'
     if config_name == 'development':
         app.config.from_pyfile('../config/development.py')
     else:
@@ -69,10 +70,18 @@ def create_app(config_name='development'):
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(projetos_bp, url_prefix='/api/projetos')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
+
+    @app.get('/api/health')
+    def health_check():
+        return {
+            'status': 'ok',
+            'environment': config_name,
+        }, 200
     
     from flask_jwt_extended import verify_jwt_in_request, get_jwt
     from flask_jwt_extended.exceptions import NoAuthorizationError
     from sqlalchemy import text
+    from werkzeug.exceptions import HTTPException
 
     @app.before_request
     def set_tenant_schema():
@@ -93,6 +102,8 @@ def create_app(config_name='development'):
                     from flask import abort
                     abort(400)
                 db.session.execute(text(f"SET search_path TO {schema}, public"))
+        except HTTPException:
+            raise
         except Exception as e:
             # Em caso de erro com token, ignora e deixa o decorador da rota lidar
             pass
