@@ -1,7 +1,23 @@
 import axios from 'axios';
 
+const DEFAULT_LOCAL_API_URL = 'http://localhost:5001';
+const PRODUCTION_API_URL = 'https://crm-production-0b91.up.railway.app';
+
+const getApiBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+
+  if (typeof window !== 'undefined') {
+    const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    return isLocalhost ? DEFAULT_LOCAL_API_URL : PRODUCTION_API_URL;
+  }
+
+  return DEFAULT_LOCAL_API_URL;
+};
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,7 +49,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
-          const response = await axios.post('/api/usuarios/refresh', {}, {
+          const response = await api.post('/api/usuarios/refresh', {}, {
             headers: { Authorization: `Bearer ${refreshToken}` },
           });
 
