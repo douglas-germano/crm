@@ -24,8 +24,9 @@ if not JWT_SECRET_KEY:
 JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
 JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
-# CORS
-CORS_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ORIGINS', '').split(',') if origin.strip()]
+# CORS — se CORS_ORIGINS não estiver definido, permite todas as origens
+_cors_list = [o.strip() for o in os.environ.get('CORS_ORIGINS', '').split(',') if o.strip()]
+CORS_ORIGINS = _cors_list if _cors_list else '*'
 
 # Frontend URL (usado em e-mails de recuperação de senha)
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://app.apexcrm.com.br')
