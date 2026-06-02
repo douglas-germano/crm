@@ -48,6 +48,7 @@ yarn-error.log*
 # Next.js
 .next/
 out/
+*.tsbuildinfo
 
 # IDEs and OS
 .DS_Store
