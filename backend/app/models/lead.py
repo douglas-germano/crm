@@ -1,25 +1,25 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 class Lead(db.Model):
     __tablename__ = 'leads'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
     nome = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20))
-    empresa = db.Column(db.String(100))  # legacy - nome da empresa como texto
+    empresa_nome = db.Column('empresa', db.String(100))  # legacy - nome da empresa como texto
     empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=True)
-    empresa_rel = db.relationship('Empresa', backref=db.backref('leads', lazy='dynamic'))
+    empresa = db.relationship('Empresa', backref=db.backref('leads', lazy='dynamic'))
     cargo = db.Column(db.String(100))
     interesse = db.Column(db.String(100))
     origem = db.Column(db.String(50))  # Site, Indicação, Evento, etc.
     observacoes = db.Column(db.Text)
     status = db.Column(db.String(20), default='novo')  # novo, contatado, qualificado, convertido, perdido
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Campo para indicar qual usuário está responsável pelo lead
     responsavel_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
@@ -32,9 +32,9 @@ class Lead(db.Model):
             'nome': self.nome,
             'email': self.email,
             'telefone': self.telefone,
-            'empresa': self.empresa,
+            'empresa': self.empresa_nome,
             'empresa_id': self.empresa_id,
-            'empresa_dados': self.empresa_rel.to_dict() if self.empresa_rel else None,
+            'empresa_dados': self.empresa.to_dict() if self.empresa else None,
             'cargo': self.cargo,
             'interesse': self.interesse,
             'origem': self.origem,

@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 
@@ -40,8 +40,8 @@ class Tarefa(db.Model):
                                   lazy='dynamic', cascade='all, delete-orphan')
 
     # Rastreamento
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
@@ -83,7 +83,7 @@ class ChecklistItem(db.Model):
                                                            cascade='all, delete-orphan',
                                                            order_by='ChecklistItem.ordem'))
 
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
@@ -111,8 +111,8 @@ class ComentarioTarefa(db.Model):
     autor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     autor = db.relationship('Usuario', backref=db.backref('comentarios_tarefa', lazy='dynamic'))
 
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {

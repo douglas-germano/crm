@@ -3,8 +3,7 @@ from app import db
 from app.models import Lead, Negocio, Empresa, Estagio, LogAtividade, Pipeline
 from app.blueprints.dashboard import dashboard_bp
 from app.utils.decorators import token_required
-from sqlalchemy import func
-from datetime import datetime, timedelta
+from sqlalchemy import func, case
 
 
 @dashboard_bp.route('/stats', methods=['GET'])
@@ -14,27 +13,26 @@ def obter_stats(usuario_atual):
         total_leads = Lead.query.count()
         total_empresas = Empresa.query.filter_by(ativo=True).count()
 
-        total_negocios = Negocio.query.count()
-        total_abertos = Negocio.query.filter_by(status='aberto').count()
-        total_ganhos = Negocio.query.filter_by(status='ganho').count()
-        total_perdidos = Negocio.query.filter_by(status='perdido').count()
+        # Uma única query consolidada para todos os stats de negócios
+        stats = db.session.query(
+            func.count(Negocio.id).label('total'),
+            func.sum(case((Negocio.status == 'aberto', 1), else_=0)).label('abertos'),
+            func.sum(case((Negocio.status == 'ganho', 1), else_=0)).label('ganhos'),
+            func.sum(case((Negocio.status == 'perdido', 1), else_=0)).label('perdidos'),
+            func.coalesce(func.sum(Negocio.valor), 0).label('valor_total'),
+            func.coalesce(func.sum(case((Negocio.status == 'ganho', Negocio.valor), else_=0)), 0).label('valor_ganho'),
+            func.coalesce(func.sum(case((Negocio.status == 'aberto', Negocio.valor), else_=0)), 0).label('valor_aberto'),
+            func.coalesce(func.sum(case((Negocio.status == 'perdido', Negocio.valor), else_=0)), 0).label('valor_perdido'),
+        ).first()
 
-        valor_total = db.session.query(func.sum(Negocio.valor)).scalar() or 0
-        valor_ganho = db.session.query(func.sum(Negocio.valor)).filter(Negocio.status == 'ganho').scalar() or 0
-        valor_aberto = db.session.query(func.sum(Negocio.valor)).filter(Negocio.status == 'aberto').scalar() or 0
-        valor_perdido = db.session.query(func.sum(Negocio.valor)).filter(Negocio.status == 'perdido').scalar() or 0
-
-        # Leads por status
         leads_por_status = db.session.query(
             Lead.status, func.count(Lead.id)
         ).group_by(Lead.status).all()
 
-        # Leads por origem
         leads_por_origem = db.session.query(
             Lead.origem, func.count(Lead.id)
         ).filter(Lead.origem.isnot(None)).group_by(Lead.origem).all()
 
-        # Taxa de conversão
         taxa_conversao = 0
         if total_leads > 0:
             convertidos = Lead.query.filter_by(status='convertido').count()
@@ -43,14 +41,14 @@ def obter_stats(usuario_atual):
         return jsonify({
             'total_leads': total_leads,
             'total_empresas': total_empresas,
-            'total_negocios': total_negocios,
-            'total_abertos': total_abertos,
-            'total_ganhos': total_ganhos,
-            'total_perdidos': total_perdidos,
-            'valor_total': float(valor_total),
-            'valor_ganho': float(valor_ganho),
-            'valor_aberto': float(valor_aberto),
-            'valor_perdido': float(valor_perdido),
+            'total_negocios': stats.total or 0,
+            'total_abertos': stats.abertos or 0,
+            'total_ganhos': stats.ganhos or 0,
+            'total_perdidos': stats.perdidos or 0,
+            'valor_total': float(stats.valor_total or 0),
+            'valor_ganho': float(stats.valor_ganho or 0),
+            'valor_aberto': float(stats.valor_aberto or 0),
+            'valor_perdido': float(stats.valor_perdido or 0),
             'taxa_conversao': taxa_conversao,
             'leads_por_status': [{'status': s, 'total': t} for s, t in leads_por_status],
             'leads_por_origem': [{'origem': o or 'Não informado', 'total': t} for o, t in leads_por_origem],

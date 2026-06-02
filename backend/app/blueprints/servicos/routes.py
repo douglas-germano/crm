@@ -48,7 +48,7 @@ def criar_servico(usuario_atual):
 @token_required
 def atualizar_servico(usuario_atual, servico_id):
     try:
-        servico = Servico.query.get(servico_id)
+        servico = db.session.get(Servico, servico_id)
         if not servico:
             return jsonify({'erro': 'Serviço não encontrado'}), 404
 
@@ -69,7 +69,7 @@ def atualizar_servico(usuario_atual, servico_id):
 @token_required
 def excluir_servico(usuario_atual, servico_id):
     try:
-        servico = Servico.query.get(servico_id)
+        servico = db.session.get(Servico, servico_id)
         if not servico:
             return jsonify({'erro': 'Serviço não encontrado'}), 404
 

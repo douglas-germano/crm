@@ -143,7 +143,7 @@ def gerar_pdf_laudo(inspecao):
 
     # Adicionar parâmetros específicos de JSON
     dados_tecnicos_json = inspecao.ativo.dados_tecnicos or {}
-    for k, v in list(dados_tecnicos_json.items())[:4]:  # Limitar a 4 para não desformatar
+    for k, v in dados_tecnicos_json.items():
         dados_ativos.append([
             Paragraph(f"<b>{k.capitalize()}:</b>", normal_text), Paragraph(str(v), normal_text),
             Paragraph("", normal_text), Paragraph("", normal_text)

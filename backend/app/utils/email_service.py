@@ -57,4 +57,4 @@ def enviar_email(para_email, assunto, html_content, para_nome=None):
             
     except Exception as e:
         current_app.logger.error(f"Erro de conectividade com a Brevo disparando para {para_email}: {str(e)}")
-        return False, "Serviço de mensageria temporariamente invisível."
+        return False, "Serviço de mensageria temporariamente indisponível."

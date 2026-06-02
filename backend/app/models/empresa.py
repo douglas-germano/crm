@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 
@@ -22,8 +22,8 @@ class Empresa(db.Model):
     website = db.Column(db.String(200))
     observacoes = db.Column(db.Text)
     ativo = db.Column(db.Boolean, default=True)
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relacionamentos
     contatos = db.relationship('Contato', backref='empresa', lazy='dynamic', cascade='all, delete-orphan')

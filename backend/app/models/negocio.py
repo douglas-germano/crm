@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 class Negocio(db.Model):
@@ -30,8 +30,8 @@ class Negocio(db.Model):
     motivo = db.Column(db.Text)
     
     # Campos para rastreamento
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     data_fechamento = db.Column(db.DateTime)  # Data em que o negócio foi fechado (ganho ou perdido)
     
     # Relacionamentos
@@ -140,9 +140,9 @@ class AtividadeNegocio(db.Model):
     responsavel = db.relationship('Usuario', foreign_keys=[responsavel_id], backref=db.backref('atividades_negocio', lazy='dynamic'))
     
     # Rastreamento
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
     def to_dict(self):
         return {
             'id': self.id,

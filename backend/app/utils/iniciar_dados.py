@@ -71,10 +71,8 @@ def criar_perfis(permissoes):
             nome='Vendedor',
             descricao='Acesso às funcionalidades de vendas'
         )
-        # Adicionar apenas permissões relevantes para vendedor
-        # (a ser implementado conforme módulos adicionais forem criados)
         db.session.add(vendedor)
-    
+
     # Perfil Supervisor
     supervisor = Perfil.query.filter_by(nome='Supervisor').first()
     if not supervisor:
@@ -82,8 +80,6 @@ def criar_perfis(permissoes):
             nome='Supervisor',
             descricao='Supervisão de equipe e relatórios'
         )
-        # Adicionar permissões relevantes para supervisor
-        # (a ser implementado conforme módulos adicionais forem criados)
         db.session.add(supervisor)
     
     db.session.commit()

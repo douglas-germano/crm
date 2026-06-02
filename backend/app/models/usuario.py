@@ -1,12 +1,11 @@
-from app import db, login_manager
-from flask_login import UserMixin
+from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
-class Usuario(db.Model, UserMixin):
+class Usuario(db.Model):
     __tablename__ = 'usuarios'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
     nome = db.Column(db.String(100), nullable=False)
@@ -15,7 +14,7 @@ class Usuario(db.Model, UserMixin):
     perfil_id = db.Column(db.Integer, db.ForeignKey('perfis.id'), nullable=False)
     ativo = db.Column(db.Boolean, default=True)
     deve_trocar_senha = db.Column(db.Boolean, default=True)
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     ultimo_login = db.Column(db.DateTime)
     
     # Relacionamentos
@@ -33,9 +32,6 @@ class Usuario(db.Model, UserMixin):
     def verificar_senha(self, senha):
         return check_password_hash(self.senha_hash, senha)
 
-    def set_senha(self, senha):
-        self.senha_hash = generate_password_hash(senha)
-    
     def to_dict(self):
         return {
             'id': self.id,
@@ -52,7 +48,3 @@ class Usuario(db.Model, UserMixin):
     
     def __repr__(self):
         return f'<Usuario {self.nome}>'
-
-@login_manager.user_loader
-def load_user(user_id):
-    return Usuario.query.get(int(user_id)) 

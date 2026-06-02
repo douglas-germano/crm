@@ -48,7 +48,7 @@ def listar_empresas(usuario_atual):
 @token_required
 def obter_empresa(usuario_atual, empresa_id):
     try:
-        empresa = Empresa.query.get(empresa_id)
+        empresa = db.session.get(Empresa, empresa_id)
         if not empresa:
             return jsonify({'erro': 'Empresa não encontrada'}), 404
 
@@ -99,15 +99,15 @@ def criar_empresa(usuario_atual):
 @token_required
 def atualizar_empresa(usuario_atual, empresa_id):
     try:
-        empresa = Empresa.query.get(empresa_id)
+        empresa = db.session.get(Empresa, empresa_id)
         if not empresa:
             return jsonify({'erro': 'Empresa não encontrada'}), 404
 
         dados = request.get_json()
 
         campos = ['cnpj', 'razao_social', 'nome_fantasia', 'ramo', 'porte',
-                   'endereco', 'cidade', 'estado', 'cep', 'telefone',
-                   'email', 'website', 'observacoes', 'ativo']
+                  'endereco', 'cidade', 'estado', 'cep', 'telefone',
+                  'email', 'website', 'observacoes', 'ativo']
         for campo in campos:
             if campo in dados:
                 setattr(empresa, campo, dados[campo])
@@ -124,7 +124,7 @@ def atualizar_empresa(usuario_atual, empresa_id):
 @token_required
 def excluir_empresa(usuario_atual, empresa_id):
     try:
-        empresa = Empresa.query.get(empresa_id)
+        empresa = db.session.get(Empresa, empresa_id)
         if not empresa:
             return jsonify({'erro': 'Empresa não encontrada'}), 404
 
@@ -143,7 +143,7 @@ def excluir_empresa(usuario_atual, empresa_id):
 @token_required
 def listar_contatos(usuario_atual, empresa_id):
     try:
-        empresa = Empresa.query.get(empresa_id)
+        empresa = db.session.get(Empresa, empresa_id)
         if not empresa:
             return jsonify({'erro': 'Empresa não encontrada'}), 404
 
@@ -158,7 +158,7 @@ def listar_contatos(usuario_atual, empresa_id):
 @token_required
 def criar_contato(usuario_atual, empresa_id):
     try:
-        empresa = Empresa.query.get(empresa_id)
+        empresa = db.session.get(Empresa, empresa_id)
         if not empresa:
             return jsonify({'erro': 'Empresa não encontrada'}), 404
 

@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 
@@ -12,7 +12,7 @@ class Servico(db.Model):
     descricao = db.Column(db.Text)
     categoria = db.Column(db.String(50))  # projeto, consultoria, manutencao, fabricacao, inspecao
     ativo = db.Column(db.Boolean, default=True)
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
