@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import useSWR from 'swr'
 import api from '@/lib/api'
 import { formatCurrency } from '@/lib/utils'
@@ -137,9 +137,9 @@ const EMPTY_TAREFA_FORM: TarefaForm = {
 }
 
 export default function ProjetoDetalhePage() {
-  const params = useParams()
   const router = useRouter()
-  const projetoId = params.id
+  const searchParams = useSearchParams()
+  const projetoId = searchParams.get('id')
 
   const [showTarefaModal, setShowTarefaModal] = useState(false)
   const [showEditProjetoModal, setShowEditProjetoModal] = useState(false)
@@ -152,7 +152,7 @@ export default function ProjetoDetalhePage() {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
 
   const { data: projeto, mutate, isLoading } = useSWR<Projeto>(
-    `/api/projetos/${projetoId}`,
+    projetoId ? `/api/projetos/${projetoId}` : null,
     fetcher
   )
 

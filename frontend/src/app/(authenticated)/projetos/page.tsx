@@ -235,7 +235,7 @@ export default function ProjetosPage() {
             <Card
               key={projeto.id}
               className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-brand-300"
-              onClick={() => router.push(`/projetos/${projeto.id}`)}
+              onClick={() => router.push(`/projetos/detalhe?id=${projeto.id}`)}
             >
               <CardContent className="p-5">
                 {/* Header */}
