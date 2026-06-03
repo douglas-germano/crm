@@ -1,6 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
+import Link from 'next/link';
 import {
   BarChart,
   Bar,
@@ -16,7 +17,7 @@ import api from '@/lib/api';
 import { cn, formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Users, Building2, Wallet, TrendingUp, type LucideIcon } from 'lucide-react';
+import { Users, Building2, Wallet, TrendingUp, ArrowRight, type LucideIcon } from 'lucide-react';
 import type { DashboardStats, FunilData } from '@/types';
 
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
@@ -81,14 +82,16 @@ function StatCard({
   value,
   accentColor,
   icon: Icon,
+  href,
 }: {
   label: string;
   value: string | number;
   accentColor: string;
   icon: LucideIcon;
+  href?: string;
 }) {
-  return (
-    <Card className="relative overflow-hidden group hover:[box-shadow:var(--card-shadow-hover)]">
+  const inner = (
+    <Card className="relative overflow-hidden group hover:[box-shadow:var(--card-shadow-hover)] transition-shadow">
       <div
         className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-200 group-hover:w-1.5"
         style={{ backgroundColor: accentColor }}
@@ -108,9 +111,16 @@ function StatCard({
         <p className="text-2xl font-display font-semibold text-foreground tabular-nums">
           {value}
         </p>
+        {href && (
+          <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-0.5 group-hover:text-primary transition-colors">
+            Ver detalhes <ArrowRight className="h-2.5 w-2.5" />
+          </p>
+        )}
       </CardContent>
     </Card>
   );
+  if (href) return <Link href={href} className="block">{inner}</Link>;
+  return inner;
 }
 
 export default function DashboardPage() {
@@ -152,24 +162,28 @@ export default function DashboardPage() {
             value={stats?.total_leads ?? 0}
             accentColor={COLORS.blue}
             icon={Users}
+            href="/leads"
           />
           <StatCard
             label="Empresas"
             value={stats?.total_empresas ?? 0}
             accentColor={COLORS.steel}
             icon={Building2}
+            href="/empresas"
           />
           <StatCard
             label="Negócios Abertos"
             value={stats ? formatCurrency(stats.valor_aberto) : 'R$ 0,00'}
             accentColor={COLORS.orange}
             icon={Wallet}
+            href="/negocios"
           />
           <StatCard
             label="Receita Ganha"
             value={stats ? formatCurrency(stats.valor_ganho) : 'R$ 0,00'}
             accentColor={COLORS.green}
             icon={TrendingUp}
+            href="/relatorios"
           />
         </div>
       )}

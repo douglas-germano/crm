@@ -18,6 +18,9 @@ import {
   ArrowLeft,
   ClipboardCheck,
   ShieldCheck,
+  Activity,
+  Calendar,
+  BarChart2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -40,31 +43,39 @@ const navSections = [
   {
     label: 'Vendas',
     links: [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/leads',     label: 'Leads',     icon: Users           },
-      { href: '/pipeline',  label: 'Pipeline',  icon: GitBranch       },
-      { href: '/negocios',  label: 'Negócios',  icon: Briefcase       },
+      { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+      { href: '/leads',      label: 'Leads',      icon: Users           },
+      { href: '/pipeline',   label: 'Pipeline',   icon: GitBranch       },
+      { href: '/negocios',   label: 'Negócios',   icon: Briefcase       },
+      { href: '/atividades', label: 'Atividades', icon: Activity        },
     ],
   },
   {
     label: 'Relacionamento',
     links: [
-      { href: '/projetos',  label: 'Projetos',  icon: FolderKanban },
-      { href: '/empresas',  label: 'Empresas',  icon: Building2    },
+      { href: '/projetos',   label: 'Projetos',   icon: FolderKanban },
+      { href: '/empresas',   label: 'Empresas',   icon: Building2    },
+      { href: '/calendario', label: 'Calendário', icon: Calendar     },
     ],
   },
   {
     label: 'Inspeções',
     links: [
-      { href: '/contratos-amc',  label: 'Contratos AMC',     icon: ShieldCheck },
+      { href: '/contratos-amc',  label: 'Contratos AMC',     icon: ShieldCheck    },
       { href: '/portal-cliente', label: 'Portal do Cliente', icon: ClipboardCheck },
+    ],
+  },
+  {
+    label: 'Análise',
+    links: [
+      { href: '/relatorios', label: 'Relatórios', icon: BarChart2 },
     ],
   },
   {
     label: 'Configuração',
     links: [
-      { href: '/usuarios',  label: 'Usuários',      icon: UserCog  },
-      { href: '/perfil',    label: 'Configurações',  icon: Settings },
+      { href: '/usuarios', label: 'Usuários',      icon: UserCog  },
+      { href: '/perfil',   label: 'Configurações', icon: Settings },
     ],
   },
 ];
