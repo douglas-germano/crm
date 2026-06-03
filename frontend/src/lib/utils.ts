@@ -14,7 +14,10 @@ export function formatCurrency(value: number): string {
 
 export function formatDate(dateStr: string): string {
   if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('pt-BR', {
+  // Date-only strings (YYYY-MM-DD) are parsed as UTC midnight; appending T12:00:00
+  // keeps them in local time regardless of timezone offset.
+  const normalized = dateStr.includes('T') ? dateStr : dateStr + 'T12:00:00';
+  return new Date(normalized).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
