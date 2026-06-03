@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,35 +6,35 @@
 
 @layer base {
   :root {
-    --font-display: 'Instrument Sans', system-ui, sans-serif;
-    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
 
-    --background: 0 0% 98.4%;
-    --foreground: 215 14% 15%;
+    --background: 0 0% 100%;
+    --foreground: 210 8% 16%;
     --card: 0 0% 100%;
-    --card-foreground: 215 14% 15%;
+    --card-foreground: 210 8% 16%;
     --popover: 0 0% 100%;
-    --popover-foreground: 215 14% 15%;
-    --primary: 213 53% 24%;
+    --popover-foreground: 210 8% 16%;
+    --primary: 0 100% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 11% 93%;
-    --secondary-foreground: 215 14% 30%;
-    --muted: 210 11% 95%;
-    --muted-foreground: 215 8% 47%;
-    /* accent é usado para destaques de cor (laranja), NÃO para hover de superfície */
-    --accent: 210 11% 93%;
-    --accent-foreground: 215 14% 30%;
-    --engetch-orange: 25 81% 52%;
-    --destructive: 0 84% 60%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 210 8% 16%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 49%;
+    /* accent é usado para destaques de cor (Vodafone Red), NÃO para hover de superfície */
+    --accent: 0 0% 95%;
+    --accent-foreground: 210 8% 16%;
+    --engetch-orange: 0 100% 45%;
+    --destructive: 0 100% 45%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 14% 89%;
-    --input: 210 14% 89%;
-    --ring: 213 53% 24%;
-    --radius: 0.625rem;
-    /* Sombra padrão para cards — mais expressiva que shadow-sm */
-    --card-shadow: 0 1px 3px rgba(30, 58, 95, 0.06), 0 1px 8px rgba(30, 58, 95, 0.04);
-    --card-shadow-hover: 0 4px 12px rgba(30, 58, 95, 0.10), 0 1px 3px rgba(30, 58, 95, 0.06);
+    --border: 0 0% 89%;
+    --input: 0 0% 89%;
+    --ring: 0 100% 45%;
+    --radius: 6px;
+    /* Sombra padrão para cards — Vodafone Design System é intencionalmente flat */
+    --card-shadow: none;
+    --card-shadow-hover: 0 1px 3px rgba(37, 40, 43, 0.05);
   }
 
   * {
@@ -99,11 +99,21 @@
 .stagger-children > *:nth-child(7) { animation-delay: 0.28s; }
 .stagger-children > *:nth-child(8) { animation-delay: 0.32s; }
 
-/* Engetch orange utility classes */
-.bg-engetch-orange\/10 { background-color: rgba(232, 124, 30, 0.10); }
-.bg-engetch-orange\/15 { background-color: rgba(232, 124, 30, 0.15); }
-.text-engetch-orange   { color: #e87c1e; }
-.border-engetch-orange { border-color: #e87c1e; }
+/* Engetch orange utility classes (Mapped to Vodafone Red) */
+.bg-engetch-orange\/10 { background-color: rgba(230, 0, 0, 0.10); }
+.bg-engetch-orange\/15 { background-color: rgba(230, 0, 0, 0.15); }
+.text-engetch-orange   { color: #e60000; }
+.border-engetch-orange { border-color: #e60000; }
 
 /* Sidebar nav hover (white/8 não é gerado por padrão) */
 .hover\:bg-white\/8:hover { background-color: rgba(255, 255, 255, 0.08); }
+
+/* Vodafone Design System Helpers */
+.bg-vodafone-red { background-color: #e60000; }
+.text-vodafone-red { color: #e60000; }
+.bg-charcoal { background-color: #25282b; }
+.text-charcoal { color: #25282b; }
+.bg-light-neutral { background-color: #f2f2f2; }
+.text-light-neutral { color: #f2f2f2; }
+.text-secondary-grey { color: #7e7e7e; }
+.text-link-blue { color: #3860be; }
