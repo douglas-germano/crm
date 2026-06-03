@@ -83,10 +83,10 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Usuários</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Usuários</h2>
         <Button onClick={() => setShowModal(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" />
           Novo Usuário

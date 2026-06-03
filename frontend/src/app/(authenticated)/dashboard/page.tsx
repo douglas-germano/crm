@@ -159,7 +159,7 @@ export default function DashboardPage() {
   const taxaConversao = stats?.taxa_conversao ?? 0;
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* ---- Stat Cards ---- */}
       {isLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">

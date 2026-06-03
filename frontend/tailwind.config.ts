@@ -77,9 +77,9 @@ const config: Config = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)", // 6px
-        md: "calc(var(--radius) - 2px)", // 4px
-        sm: "calc(var(--radius) - 4px)", // 2px
+        lg: "6px", // card corners
+        md: "6px", // input/textarea/select corners
+        sm: "2px", // utility button corners
         // Vodafone Specific
         'button-tight': '2px',
         'card-vf': '6px',

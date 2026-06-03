@@ -185,7 +185,7 @@ export default function LeadsPage() {
   const handleSubmit = editingLead ? handleEdit : handleCreate
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Success message */}
       {successMessage && (
         <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm font-medium animate-fade-in">

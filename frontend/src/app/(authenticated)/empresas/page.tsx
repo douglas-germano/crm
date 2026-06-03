@@ -177,10 +177,10 @@ export default function EmpresasPage() {
   const expandedContatos: Contato[] = expandedData?.contatos ?? []
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Empresas</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Empresas</h2>
         <Button onClick={openCreateModal} size="sm">
           <Plus className="h-4 w-4 mr-1" />
           Nova Empresa

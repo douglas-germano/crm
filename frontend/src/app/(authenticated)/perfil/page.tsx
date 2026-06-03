@@ -117,9 +117,9 @@ export default function PerfilPage() {
   const initials = user?.nome ? getInitials(user.nome) : '?'
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
-      <h2 className="text-xl font-semibold">Meu Perfil</h2>
+      <h2 className="text-2xl font-semibold tracking-tight">Meu Perfil</h2>
 
       {/* Force password change banner */}
       {user?.deve_trocar_senha && (
