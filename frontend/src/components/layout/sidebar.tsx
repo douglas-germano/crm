@@ -63,8 +63,8 @@ const navSections = [
   {
     label: 'Configuração',
     links: [
-      { href: '/usuarios', label: 'Usuários', icon: UserCog },
-      { href: '/admin/settings', label: 'Configurações', icon: Settings },
+      { href: '/usuarios',  label: 'Usuários',      icon: UserCog  },
+      { href: '/perfil',    label: 'Configurações',  icon: Settings },
     ],
   },
 ];
@@ -158,8 +158,7 @@ export default function Sidebar() {
   }, []);
 
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === '/admin') return pathname === href;
-    if (href === '/admin/settings') return pathname.startsWith('/admin/settings');
+    if (href === '/dashboard' || href === '/admin' || href === '/perfil') return pathname === href;
     return pathname.startsWith(href);
   };
 
