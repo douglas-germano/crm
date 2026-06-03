@@ -23,7 +23,7 @@ export default function PortalClientePage() {
       try {
         setLoading(true);
         const res = await api.get('/api/empresas');
-        const dataEmpresas: Empresa[] = res.data;
+        const dataEmpresas: Empresa[] = res.data.empresas ?? res.data;
         setEmpresas(dataEmpresas);
         
         if (dataEmpresas.length > 0) {
