@@ -61,13 +61,17 @@ def registrar_tenant():
 
         from app.utils.iniciar_dados import criar_permissoes, criar_perfis
         permissoes = criar_permissoes()
-        criar_perfis(permissoes)
+        perfis = criar_perfis(permissoes)
 
         db.session.execute(text(f"SET search_path TO {workspace}, public;"))
         Pipeline.criar_pipeline_padrao()
 
         db.session.execute(text(f"SET search_path TO {workspace}, public;"))
-        perfil_admin = Perfil.query.filter_by(nome='Administrador').first()
+        perfil_admin = next((p for p in perfis if p.nome == 'Administrador'), None)
+        if perfil_admin is None:
+            perfil_admin = Perfil.query.filter_by(nome='Administrador').first()
+        if perfil_admin is None:
+            raise Exception("Perfil 'Administrador' não encontrado após criação dos perfis.")
 
         admin_user = Usuario(
             nome=data['nome_admin'],
