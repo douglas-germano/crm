@@ -35,7 +35,7 @@ export default function ContratosAmcPage() {
       setContratos(resContratos.data);
 
       const resEmpresas = await api.get('/api/empresas');
-      setEmpresas(resEmpresas.data);
+      setEmpresas(resEmpresas.data.empresas ?? resEmpresas.data);
     } catch (err) {
       console.error('Erro ao carregar contratos e empresas', err);
     } finally {
