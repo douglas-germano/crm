@@ -67,9 +67,9 @@ export default function PerfilPage() {
       await api.put('/api/usuarios/perfil', form)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
-    } catch (err: any) {
-      const msg = err?.response?.data?.erro || err?.response?.data?.message || 'Erro ao salvar perfil.'
-      setProfileError(msg)
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string; message?: string } } }
+      setProfileError(error.response?.data?.erro || error.response?.data?.message || 'Erro ao salvar perfil.')
     } finally {
       setLoading(false)
     }
@@ -106,9 +106,9 @@ export default function PerfilPage() {
       setSenhaSuccess(true)
       setSenhaForm({ senha_atual: '', nova_senha: '', confirmar_senha: '' })
       setTimeout(() => setSenhaSuccess(false), 3000)
-    } catch (err: any) {
-      const msg = err?.response?.data?.erro || err?.response?.data?.message || 'Erro ao alterar senha.'
-      setSenhaError(msg)
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string; message?: string } } }
+      setSenhaError(error.response?.data?.erro || error.response?.data?.message || 'Erro ao alterar senha.')
     } finally {
       setSenhaLoading(false)
     }
