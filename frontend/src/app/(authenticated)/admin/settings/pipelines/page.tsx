@@ -71,8 +71,8 @@ function EstagioRow({
 
   if (editing) {
     return (
-      <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-brand-500/30">
-        <GripVertical className="h-4 w-4 text-muted-foreground/30 shrink-0" />
+      <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-apex-orange/30">
+        <GripVertical className="h-4 w-4 text-steel-600 shrink-0" />
         <div className="w-4 h-4 rounded-full shrink-0 ring-2 ring-white/20" style={{ backgroundColor: cor }} />
         <Input
           value={nome}
@@ -94,7 +94,7 @@ function EstagioRow({
         <button onClick={handleSave} disabled={saving} className="text-emerald-400 hover:text-emerald-300 disabled:opacity-50 shrink-0">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         </button>
-        <button onClick={handleCancel} className="text-muted-foreground hover:text-white shrink-0">
+        <button onClick={handleCancel} className="text-steel-400 hover:text-white shrink-0">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -102,20 +102,20 @@ function EstagioRow({
   }
 
   return (
-    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/3 group">
-      <GripVertical className="h-4 w-4 text-muted-foreground/30 shrink-0" />
+    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 group">
+      <GripVertical className="h-4 w-4 text-steel-600 shrink-0" />
       <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: estagio.cor || '#64748b' }} />
       <span className="text-sm flex-1 truncate">{estagio.nome}</span>
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
         <button
           onClick={() => setEditing(true)}
-          className="p-1 rounded text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
+          className="p-1 rounded text-steel-400 hover:text-white hover:bg-white/10 transition-colors"
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={() => onDelete(estagio.id)}
-          className="p-1 rounded text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="p-1 rounded text-steel-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -233,7 +233,7 @@ export default function PipelineSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-steel-400" />
       </div>
     );
   }
@@ -243,20 +243,20 @@ export default function PipelineSettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold text-white">Pipelines do CRM</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Crie funis e configure os estágios de cada um.</p>
+          <p className="text-xs text-steel-400 mt-0.5">Crie funis e configure os estágios de cada um.</p>
         </div>
-        <Button size="sm" onClick={openNewPipeline} className="bg-brand-500 hover:bg-brand-600 text-white">
+        <Button size="sm" onClick={openNewPipeline} className="bg-apex-orange hover:bg-apex-orange/90 text-white">
           <Plus className="h-4 w-4 mr-1.5" />
           Novo pipeline
         </Button>
       </div>
 
       {pipelines.length === 0 ? (
-        <Card className="border-dashed border-white/10 bg-white/3">
+        <Card className="border-dashed border-white/10 bg-white/5">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <GitBranch className="h-10 w-10 text-muted-foreground/30 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">Nenhum pipeline criado</p>
-            <p className="text-xs text-muted-foreground/60 mt-1 mb-4">Crie seu primeiro funil para organizar leads no CRM.</p>
+            <GitBranch className="h-10 w-10 text-steel-600 mb-3" />
+            <p className="text-sm font-medium text-steel-400">Nenhum pipeline criado</p>
+            <p className="text-xs text-steel-500 mt-1 mb-4">Crie seu primeiro funil para organizar leads no CRM.</p>
             <Button size="sm" onClick={openNewPipeline} variant="outline" className="border-white/10">
               <Plus className="h-4 w-4 mr-1.5" />
               Criar pipeline
@@ -277,11 +277,11 @@ export default function PipelineSettingsPage() {
                   className={cn(
                     'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors',
                     active
-                      ? 'bg-brand-500/10 text-white border border-brand-500/20'
+                      ? 'bg-white/8 text-white border border-apex-orange/20'
                       : 'text-steel-400 hover:bg-white/5 hover:text-white border border-transparent'
                   )}
                 >
-                  <GitBranch className={cn('h-4 w-4 shrink-0', active ? 'text-brand-500' : 'text-steel-500')} />
+                  <GitBranch className={cn('h-4 w-4 shrink-0', active ? 'text-apex-orange' : 'text-steel-500')} />
                   <span className="flex-1 truncate font-medium">{p.nome}</span>
                   <ChevronRight className={cn('h-3.5 w-3.5 shrink-0 transition-transform', active && 'rotate-90')} />
                 </button>
@@ -291,7 +291,7 @@ export default function PipelineSettingsPage() {
 
           {/* Detalhes do pipeline selecionado */}
           {selected && (
-            <Card className="border-white/10 bg-white/3">
+            <Card className="border-white/10 bg-white/5">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -318,13 +318,13 @@ export default function PipelineSettingsPage() {
 
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between mb-3">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                  <Label className="text-xs text-steel-400 uppercase tracking-wider">
                     Estágios
                     <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">{estagios.length}</Badge>
                   </Label>
                   <Button
                     variant="ghost" size="sm"
-                    className="h-7 px-2.5 text-xs text-brand-400 hover:text-brand-300 hover:bg-brand-500/10"
+                    className="h-7 px-2.5 text-xs text-apex-orange hover:text-white hover:bg-white/8"
                     onClick={() => { setAddingEstagio(true); setNovoNome(''); setNovaCor('#6366f1'); }}
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" />
@@ -334,7 +334,7 @@ export default function PipelineSettingsPage() {
 
                 {loadingDetail ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-4 w-4 animate-spin text-steel-400" />
                   </div>
                 ) : (
                   <div className="space-y-1">
@@ -348,7 +348,7 @@ export default function PipelineSettingsPage() {
                     ))}
 
                     {estagios.length === 0 && !addingEstagio && (
-                      <div className="text-center py-8 text-muted-foreground">
+                      <div className="text-center py-8 text-steel-400">
                         <Circle className="h-8 w-8 mx-auto mb-2 opacity-20" />
                         <p className="text-xs">Nenhum estágio. Adicione o primeiro acima.</p>
                       </div>
@@ -356,8 +356,8 @@ export default function PipelineSettingsPage() {
 
                     {/* Formulário novo estágio inline */}
                     {addingEstagio && (
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-brand-500/30 mt-2">
-                        <GripVertical className="h-4 w-4 text-muted-foreground/30 shrink-0" />
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-apex-orange/30 mt-2">
+                        <GripVertical className="h-4 w-4 text-steel-600 shrink-0" />
                         <div className="w-4 h-4 rounded-full shrink-0 ring-2 ring-white/20" style={{ backgroundColor: novaCor }} />
                         <Input
                           value={novoNome}
@@ -380,7 +380,7 @@ export default function PipelineSettingsPage() {
                         <button onClick={handleCreateEstagio} disabled={savingEstagio} className="text-emerald-400 hover:text-emerald-300 disabled:opacity-50 shrink-0">
                           {savingEstagio ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                         </button>
-                        <button onClick={() => setAddingEstagio(false)} className="text-muted-foreground hover:text-white shrink-0">
+                        <button onClick={() => setAddingEstagio(false)} className="text-steel-400 hover:text-white shrink-0">
                           <X className="h-4 w-4" />
                         </button>
                       </div>
@@ -412,7 +412,7 @@ export default function PipelineSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="p-desc">Descrição <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+              <Label htmlFor="p-desc">Descrição <span className="text-steel-400 text-xs">(opcional)</span></Label>
               <Input
                 id="p-desc"
                 value={pDesc}
@@ -423,7 +423,7 @@ export default function PipelineSettingsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPipelineModal({ open: false })}>Cancelar</Button>
-            <Button onClick={handleSavePipeline} disabled={!pNome.trim() || pSaving} className="bg-brand-500 hover:bg-brand-600 text-white">
+            <Button onClick={handleSavePipeline} disabled={!pNome.trim() || pSaving} className="bg-apex-orange hover:bg-apex-orange/90 text-white">
               {pSaving && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
               {pipelineModal.editing ? 'Salvar' : 'Criar pipeline'}
             </Button>

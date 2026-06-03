@@ -28,10 +28,10 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-display font-bold tracking-tight text-white flex items-center gap-3">
-          <Settings2 className="w-6 h-6 text-brand-500 shrink-0" />
+          <Settings2 className="w-6 h-6 text-apex-orange shrink-0" />
           Configurações
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-steel-400">
           Gerencie as configurações da plataforma e do CRM.
         </p>
       </div>
@@ -47,16 +47,16 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors border-l-[3px]',
                     active
-                      ? 'bg-brand-500/10 text-white border border-brand-500/20'
-                      : 'text-steel-400 hover:bg-white/5 hover:text-white border border-transparent'
+                      ? 'border-apex-orange bg-white/8 text-white'
+                      : 'border-transparent text-steel-300 hover:bg-white/8 hover:text-white'
                   )}
                 >
                   <item.icon
                     className={cn(
                       'h-4 w-4 shrink-0',
-                      active ? 'text-brand-500' : 'text-steel-500'
+                      active ? 'text-apex-orange' : 'text-steel-400'
                     )}
                   />
                   {item.label}
