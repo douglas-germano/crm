@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShieldAlert, Database, Search, LayoutDashboard, Users, UsersRound, Briefcase, Eye, Loader2 } from 'lucide-react';
+import { ShieldAlert, Database, Users, UsersRound, Briefcase, Eye, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
@@ -27,7 +27,8 @@ export default function AdminPage() {
   const [error, setError] = useState('');
 
   const [inspecting, setInspecting] = useState<number | null>(null);
-  const [tenantData, setTenantData] = useState<any[]>([]);
+  const [tenantData, setTenantData] = useState<Record<string, unknown>[]>([]);
+  const [inspectError, setInspectError] = useState('');
   const [recursoAtivo, setRecursoAtivo] = useState<'usuarios' | 'empresas' | 'leads'>('usuarios');
 
   useEffect(() => {
@@ -49,18 +50,20 @@ export default function AdminPage() {
     if (inspecting !== tId) setTenantData([]);
     setInspecting(tId);
     setRecursoAtivo(recurso);
-    
+    setInspectError('');
+
     try {
       const resp = await api.get(`/api/admin/tenants/${tId}/${recurso}`);
       setTenantData(resp.data.dados);
     } catch {
-      alert('Falha ao extrair dados internos.');
+      setInspectError('Falha ao extrair dados internos do tenant.');
     }
   };
 
   const fecharInspecao = () => {
     setInspecting(null);
     setTenantData([]);
+    setInspectError('');
   };
 
   if (loading) return <div className="p-8 flex items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-brand-500" /></div>;
@@ -75,7 +78,7 @@ export default function AdminPage() {
     );
   }
 
-  const tenantInspesionando = tenants.find(t => t.id === inspecting);
+  const tenantInspecionando = tenants.find(t => t.id === inspecting);
 
   return (
     <div className="space-y-6">
@@ -133,7 +136,7 @@ export default function AdminPage() {
 
         {/* Visor de Inspeção */}
         <div>
-          {inspecting && tenantInspesionando ? (
+          {inspecting && tenantInspecionando ? (
             <div className="sticky top-6">
               <Card className="border-brand-500 shadow-xl shadow-brand-500/10">
                 <CardHeader className="bg-brand-500/5 pb-4">
@@ -144,27 +147,29 @@ export default function AdminPage() {
                          Visão Raio-X
                        </CardTitle>
                        <CardDescription className="mt-1">
-                         Dados nativos de <b>{tenantInspesionando.nome_fantasia}</b>
+                         Dados de <b>{tenantInspecionando.nome_fantasia}</b>
                        </CardDescription>
                      </div>
                      <Button variant="ghost" size="sm" onClick={fecharInspecao} className="text-xs">Fechar</Button>
                    </div>
                 </CardHeader>
                 <CardContent className="pt-6 max-h-[600px] overflow-auto">
-                   
                    <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 border-b pb-2">
-                     Recurso Extraído: {recursoAtivo}
+                     Recurso: {recursoAtivo}
                    </h4>
-                   
-                   {tenantData.length === 0 ? (
-                     <p className="text-center text-sm py-8 text-muted-foreground">O database desse cliente não possui registros de {recursoAtivo} ainda.</p>
+
+                   {inspectError ? (
+                     <div className="flex items-center gap-2 text-destructive text-sm py-4">
+                       <AlertCircle className="w-4 h-4 shrink-0" />
+                       {inspectError}
+                     </div>
+                   ) : tenantData.length === 0 ? (
+                     <p className="text-center text-sm py-8 text-muted-foreground">Nenhum registro de {recursoAtivo} encontrado.</p>
                    ) : (
                      <div className="space-y-3">
-                       {/* Renderer dinamico dos campos do dicio (suporta leads/clientes/users pois iteramos genericamente o cabecalho!) */}
                        {tenantData.map((d, i) => (
                          <div key={i} className="text-xs bg-muted/50 p-3 rounded border">
                            {Object.keys(d).map(chave => {
-                              // ignora lixos e uuids visuais feios
                               if (chave === 'uuid' || chave === 'senha_hash') return null;
                               return (
                                 <div key={chave} className="flex justify-between py-0.5">
