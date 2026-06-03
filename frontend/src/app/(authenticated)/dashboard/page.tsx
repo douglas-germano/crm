@@ -15,29 +15,20 @@ import {
 import api from '@/lib/api';
 import { cn, formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Users, Building2, Wallet, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { DashboardStats, FunilData } from '@/types';
 
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
 
-// ---------------------------------------------------------------------------
-// Colors
-// ---------------------------------------------------------------------------
-
 const COLORS = {
-  brand: '#25282b',   // Charcoal
-  orange: '#e60000',  // Vodafone Red
-  steel: '#7e7e7e',   // Secondary Body Grey
+  brand: '#25282b',
+  orange: '#e60000',
+  steel: '#7e7e7e',
   green: '#22c55e',
-  red: '#ac1811',     // Deep Brand Red Shade
-  blue: '#3860be',    // Signal Blue
+  red: '#ac1811',
+  blue: '#3860be',
 };
-
-// ---------------------------------------------------------------------------
-// Skeleton helpers
-// ---------------------------------------------------------------------------
 
 function StatCardSkeleton() {
   return (
@@ -52,20 +43,16 @@ function StatCardSkeleton() {
 
 function ChartSkeleton({ className }: { className?: string }) {
   return (
-    <Card className={className}>
-      <CardHeader className="p-4 pb-2">
+    <Card className={cn('flex flex-col h-full', className)}>
+      <CardHeader className="p-4 pb-2 flex-none">
         <div className="skeleton h-4 w-32 rounded" />
       </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="skeleton h-56 w-full rounded" />
+      <CardContent className="p-4 pt-0 flex-1 min-h-0">
+        <div className="skeleton h-full w-full rounded" />
       </CardContent>
     </Card>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Custom tooltip
-// ---------------------------------------------------------------------------
 
 function CustomTooltip({
   active,
@@ -88,10 +75,6 @@ function CustomTooltip({
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Stat card
-// ---------------------------------------------------------------------------
 
 function StatCard({
   label,
@@ -130,10 +113,6 @@ function StatCard({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 export default function DashboardPage() {
   const { data: stats, isLoading: loadingStats } = useSWR<DashboardStats>(
     '/api/dashboard/stats',
@@ -147,7 +126,6 @@ export default function DashboardPage() {
 
   const isLoading = loadingStats || loadingFunil;
 
-  // Pie data
   const statusData = stats
     ? [
         { name: 'Abertos', value: stats.total_abertos, color: COLORS.blue },
@@ -159,16 +137,16 @@ export default function DashboardPage() {
   const taxaConversao = stats?.taxa_conversao ?? 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col gap-3 animate-fade-in overflow-hidden">
       {/* ---- Stat Cards ---- */}
       {isLoading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-none stagger-children">
           {Array.from({ length: 4 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-none stagger-children">
           <StatCard
             label="Total Leads"
             value={stats?.total_leads ?? 0}
@@ -198,22 +176,21 @@ export default function DashboardPage() {
 
       {/* ---- Charts Row: Pipeline + Status ---- */}
       {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 flex-1 min-h-0">
           <ChartSkeleton className="lg:col-span-3" />
           <ChartSkeleton className="lg:col-span-2" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-          {/* Pipeline */}
-          <Card className="lg:col-span-3">
-            <CardHeader className="p-4 pb-3">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 flex-1 min-h-0">
+          <Card className="lg:col-span-3 flex flex-col h-full">
+            <CardHeader className="p-4 pb-3 flex-none">
               <CardTitle className="text-base font-display font-semibold text-foreground">
                 Pipeline por Estágio
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-4 pt-0 flex-1 min-h-0">
               {funil?.funil?.length ? (
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={funil.funil}
                     margin={{ top: 8, right: 4, left: -12, bottom: 0 }}
@@ -239,53 +216,54 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[260px] flex items-center justify-center text-muted-foreground text-sm">
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
                   Sem dados
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Status */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="p-4 pb-3">
+          <Card className="lg:col-span-2 flex flex-col h-full">
+            <CardHeader className="p-4 pb-3 flex-none">
               <CardTitle className="text-base font-display font-semibold text-foreground">
                 Status dos Negócios
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-4 pt-0 flex-1 min-h-0 flex flex-col items-center">
               {statusData.some((d) => d.value > 0) ? (
-                <div className="flex flex-col items-center">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={statusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {statusData.map((entry, index) => (
-                          <Cell key={index} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => [`${value}`]}
-                        contentStyle={{
-                          backgroundColor: '#0c192d',
-                          border: '1px solid #152a46',
-                          borderRadius: '4px',
-                          color: '#fff',
-                          fontSize: '12px',
-                        }}
-                        itemStyle={{ color: '#d8dde2' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="flex items-center gap-4 mt-1">
+                <>
+                  <div className="flex-1 min-h-0 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statusData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="35%"
+                          outerRadius="60%"
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {statusData.map((entry, index) => (
+                            <Cell key={index} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => [`${value}`]}
+                          contentStyle={{
+                            backgroundColor: '#0c192d',
+                            border: '1px solid #152a46',
+                            borderRadius: '4px',
+                            color: '#fff',
+                            fontSize: '12px',
+                          }}
+                          itemStyle={{ color: '#d8dde2' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex items-center gap-4 flex-none pb-2">
                     {statusData.map((d) => (
                       <div key={d.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span
@@ -297,9 +275,9 @@ export default function DashboardPage() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </>
               ) : (
-                <div className="h-[240px] flex items-center justify-center text-muted-foreground text-sm">
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
                   Sem dados
                 </div>
               )}
@@ -310,22 +288,21 @@ export default function DashboardPage() {
 
       {/* ---- Bottom Row: Origem dos Leads + Conversao ---- */}
       {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-1 min-h-0">
           <ChartSkeleton className="lg:col-span-2" />
           <ChartSkeleton />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* Origem dos Leads */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="p-4 pb-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-1 min-h-0">
+          <Card className="lg:col-span-2 flex flex-col h-full">
+            <CardHeader className="p-4 pb-3 flex-none">
               <CardTitle className="text-base font-display font-semibold text-foreground">
                 Origem dos Leads
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-4 pt-0 flex-1 min-h-0">
               {stats?.leads_por_origem?.length ? (
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={stats.leads_por_origem}
                     layout="vertical"
@@ -366,21 +343,20 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[240px] flex items-center justify-center text-muted-foreground text-sm">
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
                   Sem dados
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Conversao */}
-          <Card>
-            <CardHeader className="p-4 pb-3">
+          <Card className="flex flex-col h-full">
+            <CardHeader className="p-4 pb-3 flex-none">
               <CardTitle className="text-base font-display font-semibold text-foreground">
                 Taxa de Conversão
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0 flex flex-col items-center justify-center h-[240px]">
+            <CardContent className="p-4 pt-0 flex-1 min-h-0 flex flex-col items-center justify-center">
               <p className="text-5xl font-display font-bold tabular-nums" style={{ color: COLORS.orange }}>
                 {taxaConversao.toFixed(1)}%
               </p>
