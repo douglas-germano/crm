@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import { Empresa, Ativo, Inspecao } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,42 +16,49 @@ export default function PortalClientePage() {
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [inspecoes, setInspecoes] = useState<Inspecao[]>([]);
   const [loading, setLoading] = useState(true);
+  const initialLoadDone = useRef(false);
 
-  // Carregar lista de empresas
+  // Carregar empresas e dados da primeira empresa em um único bloco de loading
   useEffect(() => {
-    async function carregarEmpresas() {
+    async function carregarInicial() {
       try {
         setLoading(true);
         const res = await api.get('/api/empresas');
         const dataEmpresas: Empresa[] = res.data.empresas ?? res.data;
         setEmpresas(dataEmpresas);
-        
+
         if (dataEmpresas.length > 0) {
-          // Selecionar a primeira empresa por padrão
-          setEmpresaSelecionada(dataEmpresas[0].id.toString());
+          const primeiraId = dataEmpresas[0].id.toString();
+          setEmpresaSelecionada(primeiraId);
+
+          const [resAtivos, resInspecoes] = await Promise.all([
+            api.get(`/api/ativos?empresa_id=${primeiraId}`),
+            api.get(`/api/inspecoes?empresa_id=${primeiraId}`),
+          ]);
+          setAtivos(resAtivos.data);
+          setInspecoes(resInspecoes.data);
+          initialLoadDone.current = true;
         }
       } catch (err) {
-        console.error('Erro ao buscar empresas', err);
+        console.error('Erro ao carregar dados iniciais', err);
       } finally {
         setLoading(false);
       }
     }
-    carregarEmpresas();
+    carregarInicial();
   }, []);
 
-  // Carregar dados de Ativos e Inspeções para a empresa selecionada
+  // Recarregar ativos e inspeções quando o usuário troca de empresa
   useEffect(() => {
+    if (!empresaSelecionada || !initialLoadDone.current) return;
     async function carregarDadosEmpresa() {
-      if (!empresaSelecionada) return;
       try {
         setLoading(true);
-        
-        // Carregar ativos filtrados pela empresa
-        const resAtivos = await api.get(`/api/ativos?empresa_id=${empresaSelecionada}`);
+        const [resAtivos, resInspecoes] = await Promise.all([
+          api.get(`/api/ativos?empresa_id=${empresaSelecionada}`),
+          api.get(`/api/inspecoes?empresa_id=${empresaSelecionada}`),
+        ]);
         setAtivos(resAtivos.data);
-
-        // Carregar inspeções filtradas pela empresa
-        const resInspecoes = await api.get(`/api/inspecoes?empresa_id=${empresaSelecionada}`);
         setInspecoes(resInspecoes.data);
       } catch (err) {
         console.error('Erro ao buscar ativos e inspeções da empresa', err);
@@ -62,10 +69,24 @@ export default function PortalClientePage() {
     carregarDadosEmpresa();
   }, [empresaSelecionada]);
 
-  const baixarPdfLaudo = (inspecaoId: number) => {
-    const token = localStorage.getItem('token');
-    const url = `${api.defaults.baseURL}/api/inspecoes/${inspecaoId}/pdf?token=${token}`;
-    window.open(url, '_blank');
+  const baixarPdfLaudo = async (inspecaoId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const url = `${api.defaults.baseURL}/api/inspecoes/${inspecaoId}/pdf`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Erro ao baixar PDF');
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `laudo-${inspecaoId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Erro ao baixar laudo', err);
+    }
   };
 
   // Calcular estatísticas de conformidade

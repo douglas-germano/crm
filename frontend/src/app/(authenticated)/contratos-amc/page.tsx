@@ -168,7 +168,7 @@ export default function ContratosAmcPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="plano" className="text-xs font-bold text-slate-700">Plano / Recorrência</Label>
-                  <Select value={plano} onValueChange={(val: any) => setPlano(val)}>
+                  <Select value={plano} onValueChange={(val: 'mensal' | 'trimestral' | 'semestral' | 'anual') => setPlano(val)}>
                     <SelectTrigger className="border-slate-200 focus:ring-sky-600 font-semibold text-slate-700">
                       <SelectValue />
                     </SelectTrigger>
@@ -314,7 +314,7 @@ export default function ContratosAmcPage() {
                       R$ {contrato.valor_recorrente.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-slate-500 font-semibold">
-                      {new Date(contrato.data_inicio).toLocaleDateString('pt-BR')}
+                      {new Date(contrato.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell>
                       <Badge variant={contrato.status === 'ativo' ? 'default' : 'secondary'} className={`px-2 py-0.5 rounded text-xs font-bold ${contrato.status === 'ativo' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-amber-500/20 text-amber-700 border border-amber-500/30'}`}>

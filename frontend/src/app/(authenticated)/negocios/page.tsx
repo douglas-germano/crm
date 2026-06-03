@@ -50,6 +50,7 @@ interface FormData {
   servico_id: string
   valor: string
   tipo: string
+  status: string
   probabilidade: number
   data_previsao_fechamento: string
 }
@@ -62,7 +63,7 @@ interface FormErrors {
 
 const EMPTY_FORM: FormData = {
   nome: '', lead_id: '', pipeline_id: '', servico_id: '', valor: '',
-  tipo: '', probabilidade: 50, data_previsao_fechamento: ''
+  tipo: '', status: 'aberto', probabilidade: 50, data_previsao_fechamento: ''
 }
 
 export default function NegociosPage() {
@@ -175,6 +176,7 @@ export default function NegociosPage() {
       servico_id: negocio.servico_id ? String(negocio.servico_id) : '',
       valor: negocio.valor ? String(negocio.valor) : '',
       tipo: negocio.tipo || '',
+      status: negocio.status || 'aberto',
       probabilidade: negocio.probabilidade ?? 50,
       data_previsao_fechamento: negocio.data_previsao_fechamento || '',
     })
@@ -318,6 +320,18 @@ export default function NegociosPage() {
             {(Array.isArray(servicos) ? servicos : []).map((s: { id: number; nome: string }) => (
               <SelectItem key={s.id} value={String(s.id)}>{s.nome}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Status</Label>
+        <Select value={form.status || 'aberto'} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="aberto">Aberto</SelectItem>
+            <SelectItem value="ganho">Ganho</SelectItem>
+            <SelectItem value="perdido">Perdido</SelectItem>
           </SelectContent>
         </Select>
       </div>

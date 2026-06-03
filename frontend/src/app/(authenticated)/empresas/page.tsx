@@ -470,13 +470,14 @@ export default function EmpresasPage() {
               <div className="space-y-1.5">
                 <Label>Porte</Label>
                 <Select
-                  value={form.porte}
-                  onValueChange={v => setForm(f => ({ ...f, porte: v }))}
+                  value={form.porte || 'none'}
+                  onValueChange={v => setForm(f => ({ ...f, porte: v === 'none' ? '' : v }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Selecione...</SelectItem>
                     {PORTE_OPTIONS.map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
