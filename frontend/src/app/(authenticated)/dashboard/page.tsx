@@ -27,12 +27,12 @@ const fetcher = (url: string) => api.get(url).then((r) => r.data);
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  brand: '#1e3a5f',
-  orange: '#e87c1e',
-  steel: '#8e9baa',
+  brand: '#25282b',   // Charcoal
+  orange: '#e60000',  // Vodafone Red
+  steel: '#7e7e7e',   // Secondary Body Grey
   green: '#22c55e',
-  red: '#ef4444',
-  blue: '#538fd7',
+  red: '#ac1811',     // Deep Brand Red Shade
+  blue: '#3860be',    // Signal Blue
 };
 
 // ---------------------------------------------------------------------------

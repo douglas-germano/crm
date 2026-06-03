@@ -44,44 +44,49 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Apex brand
+        // Vodafone Brand Design System mappings
         brand: {
-          50: "#eef4fb",
-          100: "#d4e3f5",
-          200: "#a9c7eb",
-          300: "#7eabe1",
-          400: "#538fd7",
-          500: "#1e3a5f",
-          600: "#1a3253",
-          700: "#152a46",
-          800: "#11213a",
-          900: "#0c192d",
-          950: "#080f1c",
+          50: "#fdf2f2",
+          100: "#fde2e2",
+          200: "#fca5a5",
+          300: "#fca5a5",
+          400: "#ef4444",
+          500: "#e60000", // Vodafone Red
+          600: "#cc0000", // Hover Red
+          700: "#ac1811", // Deep Brand Red Shade
+          800: "#8a120d",
+          900: "#25282b", // Charcoal
+          950: "#1e2022",
         },
         steel: {
-          50: "#f8f9fa",
-          100: "#edf0f2",
-          200: "#d8dde2",
-          300: "#b8c1c9",
-          400: "#8e9baa",
-          500: "#6b7280",
-          600: "#545c6a",
-          700: "#434a55",
-          800: "#343941",
-          900: "#23272d",
-          950: "#14161a",
+          50: "#f2f2f2", // Light Neutral
+          100: "#e5e5e5",
+          200: "#d4d4d4",
+          300: "#a3a3a3",
+          400: "#737373",
+          500: "#7e7e7e", // Secondary Body Grey
+          600: "#525252",
+          700: "#404040",
+          800: "#262626",
+          900: "#25282b", // Charcoal
+          950: "#1e2022",
         },
         apex: {
-          orange: '#e87c1e',
-          blue: '#1e3a5f',
+          orange: '#e60000', // Vodafone Red
+          blue: '#25282b', // Charcoal
         },
-        // Classes de opacidade usadas no sidebar
-        // (white/8 não existe por padrão no Tailwind)
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius)", // 6px
+        md: "calc(var(--radius) - 2px)", // 4px
+        sm: "calc(var(--radius) - 4px)", // 2px
+        // Vodafone Specific
+        'button-tight': '2px',
+        'card-vf': '6px',
+        'asymmetric': '0px 6px 0px 0px',
+        'glass-pill': '24px',
+        'badge-pill': '32px',
+        'cta-pill': '60px',
       },
       fontFamily: {
         display: ["var(--font-display)", "system-ui", "sans-serif"],
