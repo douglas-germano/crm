@@ -168,28 +168,28 @@ export default function InspecaoCampoPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-4 pb-20">
+    <div className="mx-auto max-w-3xl space-y-6 pb-10">
       {/* HEADER */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" className="text-gray-600 hover:text-gray-900" onClick={() => router.back()}>
+        <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => router.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
-        <Badge variant={inspecao.status === 'concluida' ? 'default' : 'secondary'} className="bg-slate-900 text-white font-semibold">
+        <Badge variant={inspecao.status === 'concluida' ? 'default' : 'secondary'} className="bg-brand-900 text-white font-semibold">
           Status: {inspecao.status.toUpperCase()}
         </Badge>
       </div>
 
       <div className="space-y-2">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
           Apex Inspect — Inspeção de Campo
-        </h1>
-        <p className="text-slate-500 font-medium leading-relaxed">
+        </h2>
+        <p className="text-muted-foreground text-sm font-medium leading-relaxed">
           Preenchimento de checklist dinâmico e emissão de laudo técnico regulatório para engenheiros mecânicos.
         </p>
       </div>
 
       {/* METADADOS DO EQUIPAMENTO */}
-      <Card className="border-slate-200/80 shadow-md shadow-slate-100/50 bg-gradient-to-r from-slate-900 to-slate-950 text-white">
+      <Card className="border-border bg-brand-900 text-white">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <FileText className="h-5 w-5 text-sky-400" /> Ficha Técnica do Ativo
@@ -369,7 +369,7 @@ export default function InspecaoCampoPage() {
           <div className="pt-2">
             <Button
               size="lg"
-              className="w-full bg-slate-900 hover:bg-slate-950 text-white font-extrabold py-6 rounded-lg transition text-base tracking-wide flex items-center justify-center gap-2"
+              className="w-full py-6 font-medium text-base tracking-wide flex items-center justify-center gap-2"
               onClick={salvarLaudoCampo}
               disabled={salvando}
             >

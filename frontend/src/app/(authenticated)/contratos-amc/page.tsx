@@ -111,14 +111,14 @@ export default function ContratosAmcPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-6 pb-12">
+    <div className="mx-auto max-w-7xl space-y-6">
       {/* HEADER & NEW ACTION */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border pb-6">
         <div className="space-y-1.5">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
             Contratos de Conformidade Recorrente (AMC)
-          </h1>
-          <p className="text-slate-500 font-medium leading-relaxed">
+          </h2>
+          <p className="text-muted-foreground text-sm font-medium leading-relaxed">
             Painel administrativo para controle de receita recorrente mensal (MRR) e contratos anuais de manutenção.
           </p>
         </div>
@@ -126,7 +126,7 @@ export default function ContratosAmcPage() {
         {/* DIALOG DE CRIAÇÃO */}
         <Dialog open={openModal} onOpenChange={setOpenModal}>
           <DialogTrigger asChild>
-            <Button className="bg-slate-900 hover:bg-slate-950 text-white font-extrabold flex items-center gap-1">
+            <Button className="flex items-center gap-1">
               <Plus className="h-5 w-5" /> Novo Contrato AMC
             </Button>
           </DialogTrigger>
@@ -225,7 +225,7 @@ export default function ContratosAmcPage() {
                 <Button type="button" variant="outline" className="border-slate-200" onClick={() => setOpenModal(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-slate-900 hover:bg-slate-950 text-white font-extrabold" disabled={salvando}>
+                <Button type="submit" disabled={salvando}>
                   {salvando ? 'Processando...' : 'Salvar Contrato'}
                 </Button>
               </DialogFooter>
@@ -237,7 +237,7 @@ export default function ContratosAmcPage() {
       {/* FINANCE METRIC CARDS */}
       <div className="grid gap-6 md:grid-cols-3">
         {/* MRR CARD */}
-        <Card className="border-slate-200/80 shadow-md shadow-slate-100/50 bg-gradient-to-br from-slate-900 to-slate-950 text-white relative overflow-hidden">
+        <Card className="border-border bg-brand-900 text-white relative overflow-hidden">
           <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-1/4 translate-y-1/4">
             <CircleDollarSign className="h-44 w-44 text-emerald-400" />
           </div>
