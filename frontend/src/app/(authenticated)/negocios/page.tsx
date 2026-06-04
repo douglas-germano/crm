@@ -8,7 +8,7 @@ import { Plus, Loader2, Pencil, Trash2, Search, ChevronRight, CheckCircle2, Cloc
 import { useToast } from '@/contexts/toast-context'
 import { AtividadeNegocio } from '@/types'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -143,6 +143,50 @@ export default function NegociosPage() {
     fetcher
   )
   const atividades: AtividadeNegocio[] = Array.isArray(atividadesRaw) ? atividadesRaw : []
+
+  // Global atividades tab state (independent from sheet)
+  const [tabNegId, setTabNegId] = useState<string>('')
+  const [tabShowModal, setTabShowModal] = useState(false)
+  const [tabEditingId, setTabEditingId] = useState<number | null>(null)
+  const [tabAtivForm, setTabAtivForm] = useState<AtividadeFormData>({ ...EMPTY_ATIVIDADE_FORM })
+  const [tabAtivError, setTabAtivError] = useState('')
+  const [tabAtivLoadingState, setTabAtivLoadingState] = useState(false)
+  const [tabDeletingAtiv, setTabDeletingAtiv] = useState<AtividadeNegocio | null>(null)
+  const [tabShowDeleteModal, setTabShowDeleteModal] = useState(false)
+
+  const { data: tabAtivRaw = [], mutate: mutateTabAtiv, isLoading: tabAtivIsLoading } = useSWR(
+    tabNegId ? `/api/negocios/${tabNegId}/atividades` : null, fetcher
+  )
+  const tabAtividades: AtividadeNegocio[] = Array.isArray(tabAtivRaw) ? tabAtivRaw : []
+
+  const tabOpenCreate = () => { setTabAtivForm({ ...EMPTY_ATIVIDADE_FORM }); setTabEditingId(null); setTabAtivError(''); setTabShowModal(true) }
+  const tabOpenEdit = (a: AtividadeNegocio) => {
+    setTabAtivForm({ tipo: a.tipo, titulo: a.titulo, descricao: a.descricao ?? '', data_agendada: a.data_agendada?.slice(0, 16) ?? '', status: a.status, resultado: a.resultado ?? '' })
+    setTabEditingId(a.id); setTabAtivError(''); setTabShowModal(true)
+  }
+  const handleTabAtivSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!tabNegId) return
+    if (!tabAtivForm.titulo.trim() || !tabAtivForm.data_agendada) { setTabAtivError('Título e data são obrigatórios'); return }
+    setTabAtivLoadingState(true); setTabAtivError('')
+    try {
+      if (tabEditingId) { await api.put(`/api/negocios/${tabNegId}/atividades/${tabEditingId}`, tabAtivForm); toast('Atividade atualizada!') }
+      else { await api.post(`/api/negocios/${tabNegId}/atividades`, tabAtivForm); toast('Atividade criada!') }
+      setTabShowModal(false); mutateTabAtiv()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string } } }
+      setTabAtivError(error.response?.data?.erro || 'Erro ao salvar atividade')
+    } finally { setTabAtivLoadingState(false) }
+  }
+  const handleTabAtivDelete = async () => {
+    if (!tabDeletingAtiv || !tabNegId) return
+    setTabAtivLoadingState(true)
+    try {
+      await api.delete(`/api/negocios/${tabNegId}/atividades/${tabDeletingAtiv.id}`)
+      setTabShowDeleteModal(false); setTabDeletingAtiv(null); mutateTabAtiv(); toast('Atividade removida.', 'info')
+    } catch { toast('Erro ao remover atividade.', 'error') }
+    finally { setTabAtivLoadingState(false) }
+  }
 
   const leads = leadsData?.leads ?? []
   const pipelines = pipelinesData?.pipelines ?? pipelinesData ?? []
@@ -523,13 +567,31 @@ export default function NegociosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold tracking-tight">Negócios</h2>
-        <Button onClick={openCreateModal}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Negócio
-        </Button>
-      </div>
+      <Tabs defaultValue="negocios">
+        <div className="flex items-center justify-between mb-6">
+          <TabsList>
+            <TabsTrigger value="negocios">Negócios</TabsTrigger>
+            <TabsTrigger value="atividades">Atividades</TabsTrigger>
+          </TabsList>
+          <div>
+            <TabsContent value="negocios" className="mt-0">
+              <Button onClick={openCreateModal}>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Negócio
+              </Button>
+            </TabsContent>
+            <TabsContent value="atividades" className="mt-0">
+              <Button onClick={tabOpenCreate} disabled={!tabNegId}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Atividade
+              </Button>
+            </TabsContent>
+          </div>
+        </div>
+
+      {/* ── Tab: Negócios ── */}
+      <TabsContent value="negocios" className="mt-0">
+      <div className="space-y-6">
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -989,6 +1051,174 @@ export default function NegociosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
+      </TabsContent>
+
+      {/* ── Tab: Atividades ── */}
+      <TabsContent value="atividades" className="mt-0 space-y-4">
+        {/* Negocio selector */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex-1 min-w-[240px] space-y-1">
+                <Label className="text-xs">Selecione o Negócio</Label>
+                <Select value={tabNegId} onValueChange={setTabNegId}>
+                  <SelectTrigger><SelectValue placeholder="Escolha um negócio para ver as atividades..." /></SelectTrigger>
+                  <SelectContent>
+                    {allNegocios.map(n => (
+                      <SelectItem key={n.id} value={String(n.id)}>
+                        {n.nome} {n.lead?.nome ? `— ${n.lead.nome}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {tabNegId && (
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-amber-500" />
+                    <span className="font-medium">{tabAtividades.filter(a => a.status === 'pendente').length}</span>
+                    <span className="text-muted-foreground">pendentes</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span className="font-medium">{tabAtividades.filter(a => a.status === 'concluida').length}</span>
+                    <span className="text-muted-foreground">concluídas</span>
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Activity list */}
+        {!tabNegId ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <Activity className="h-12 w-12 mb-4 opacity-30" />
+              <p className="text-sm font-medium">Selecione um negócio acima</p>
+              <p className="text-xs mt-1">As atividades do negócio serão exibidas aqui</p>
+            </CardContent>
+          </Card>
+        ) : tabAtivIsLoading ? (
+          <div className="flex items-center justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : tabAtividades.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <Activity className="h-12 w-12 mb-4 opacity-30" />
+              <p className="text-sm font-medium">Nenhuma atividade registrada</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader className="pb-3 border-b">
+              <CardTitle className="text-base">{tabAtividades.length} atividade{tabAtividades.length !== 1 ? 's' : ''}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tabAtividades.map(a => (
+                    <TableRow key={a.id}>
+                      <TableCell><Badge variant="outline" className="text-xs">{tipoLabel(a.tipo)}</Badge></TableCell>
+                      <TableCell className="font-medium">{a.titulo}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDateDisplay(a.data_agendada)}</TableCell>
+                      <TableCell>{atividadeStatusBadge(a.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => tabOpenEdit(a)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => { setTabDeletingAtiv(a); setTabShowDeleteModal(true) }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tab atividade modal */}
+        <Dialog open={tabShowModal} onOpenChange={open => { if (!open) setTabShowModal(false) }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{tabEditingId ? 'Editar Atividade' : 'Nova Atividade'}</DialogTitle>
+              <DialogDescription>Registre uma atividade para este negócio.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleTabAtivSubmit} className="space-y-4 pt-1">
+              {tabAtivError && <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">{tabAtivError}</div>}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Tipo</Label>
+                  <Select value={tabAtivForm.tipo} onValueChange={v => setTabAtivForm(f => ({ ...f, tipo: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TIPO_ATIVIDADE_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <Select value={tabAtivForm.status} onValueChange={v => setTabAtivForm(f => ({ ...f, status: v as AtividadeNegocio['status'] }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STATUS_ATIVIDADE_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Título *</Label>
+                <Input value={tabAtivForm.titulo} onChange={e => setTabAtivForm(f => ({ ...f, titulo: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Data e Hora *</Label>
+                <Input type="datetime-local" value={tabAtivForm.data_agendada} onChange={e => setTabAtivForm(f => ({ ...f, data_agendada: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Descrição</Label>
+                <Textarea value={tabAtivForm.descricao} onChange={e => setTabAtivForm(f => ({ ...f, descricao: e.target.value }))} rows={3} />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setTabShowModal(false)}>Cancelar</Button>
+                <Button type="submit" disabled={tabAtivLoadingState}>
+                  {tabAtivLoadingState && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={tabShowDeleteModal} onOpenChange={open => { if (!open) { setTabShowDeleteModal(false); setTabDeletingAtiv(null) } }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Remover Atividade</DialogTitle>
+              <DialogDescription>Tem certeza que deseja remover <strong>{tabDeletingAtiv?.titulo}</strong>?</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setTabShowDeleteModal(false); setTabDeletingAtiv(null) }}>Cancelar</Button>
+              <Button variant="destructive" onClick={handleTabAtivDelete} disabled={tabAtivLoadingState}>
+                {tabAtivLoadingState && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Remover
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </TabsContent>
+
+      </Tabs>
     </div>
   )
 }

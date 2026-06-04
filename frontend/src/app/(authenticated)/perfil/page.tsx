@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import useSWR from 'swr'
 import api from '@/lib/api'
 import { useAuth } from '@/contexts/auth-context'
-import { cn, getInitials } from '@/lib/utils'
+import { cn, getInitials, formatDate } from '@/lib/utils'
 import {
   Loader2, Check, Lock, AlertTriangle, Eye, EyeOff,
   ShieldCheck, GlobeLock, Mail, KeySquare, AlertCircle,
-  User, Settings2,
+  User, Settings2, Users, Plus,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,11 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+
+const fetcher = (url: string) => api.get(url).then(r => r.data)
 
 export default function PerfilPage() {
   const { user } = useAuth()
@@ -54,6 +60,37 @@ export default function PerfilPage() {
   const isAdmin = user?.perfil
     ? (typeof user.perfil === 'string' ? user.perfil : user.perfil.nome) === 'Administrador'
     : false
+
+  // ── Usuários (admin) ─────────────────────────────────────────────────────────
+  const [showUsuarioModal, setShowUsuarioModal] = useState(false)
+  const [usuarioLoading, setUsuarioLoading] = useState(false)
+  const [usuarioApiError, setUsuarioApiError] = useState('')
+  const [usuarioForm, setUsuarioForm] = useState({ nome: '', email: '', senha: '', perfil_id: '' })
+
+  const { data: usuariosData, mutate: mutateUsuarios, isLoading: usuariosLoading } = useSWR(
+    isAdmin ? '/api/usuarios' : null, fetcher
+  )
+  const { data: perfisData } = useSWR(isAdmin ? '/api/usuarios/perfis' : null, fetcher)
+
+  interface UsuarioItem { id: number; nome: string; email: string; perfil?: { nome: string }; ativo: boolean; ultimo_login: string }
+  interface PerfilItem { id: number; nome: string }
+  const usuarios: UsuarioItem[] = usuariosData?.usuarios ?? []
+  const perfis: PerfilItem[] = perfisData?.perfis ?? []
+
+  const handleCreateUsuario = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!usuarioForm.perfil_id) { setUsuarioApiError('Selecione um perfil'); return }
+    setUsuarioLoading(true); setUsuarioApiError('')
+    try {
+      await api.post('/api/usuarios', { ...usuarioForm, perfil_id: Number(usuarioForm.perfil_id) })
+      setUsuarioForm({ nome: '', email: '', senha: '', perfil_id: '' })
+      setShowUsuarioModal(false)
+      mutateUsuarios()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string } } }
+      setUsuarioApiError(error.response?.data?.erro || 'Erro ao criar usuário')
+    } finally { setUsuarioLoading(false) }
+  }
 
   useEffect(() => {
     if (user) setForm({ nome: user.nome ?? '', email: user.email ?? '' })
@@ -206,6 +243,12 @@ export default function PerfilPage() {
             Segurança
           </TabsTrigger>
           {isAdmin && (
+            <TabsTrigger value="usuarios" className="gap-2">
+              <Users className="h-4 w-4" />
+              Usuários
+            </TabsTrigger>
+          )}
+          {isAdmin && (
             <TabsTrigger value="configuracoes" className="gap-2">
               <Settings2 className="h-4 w-4" />
               Configurações
@@ -352,6 +395,102 @@ export default function PerfilPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── Tab Usuários (admin only) ── */}
+        {isAdmin && (
+          <TabsContent value="usuarios" className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Gerencie os usuários do workspace.</p>
+              <Button size="sm" onClick={() => setShowUsuarioModal(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Novo Usuário
+              </Button>
+            </div>
+            <Card>
+              {usuariosLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : usuarios.length === 0 ? (
+                <div className="text-center py-20 text-muted-foreground text-sm">Nenhum usuário encontrado.</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Perfil</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Último Login</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usuarios.map(u => (
+                      <TableRow key={u.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7">
+                              <AvatarFallback className="text-xs">{u.nome.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">{u.nome}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{u.perfil?.nome ?? '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={u.ativo ? 'default' : 'destructive'} className="text-xs">
+                            {u.ativo ? 'Ativo' : 'Inativo'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {u.ultimo_login ? formatDate(u.ultimo_login) : 'Nunca'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Card>
+
+            <Dialog open={showUsuarioModal} onOpenChange={open => { if (!open) { setShowUsuarioModal(false); setUsuarioApiError(''); setUsuarioForm({ nome: '', email: '', senha: '', perfil_id: '' }) } }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader><DialogTitle>Novo Usuário</DialogTitle></DialogHeader>
+                <form onSubmit={handleCreateUsuario} className="space-y-4">
+                  {usuarioApiError && (
+                    <div className="px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">{usuarioApiError}</div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label>Nome *</Label>
+                    <Input required value={usuarioForm.nome} onChange={e => setUsuarioForm(f => ({ ...f, nome: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Email *</Label>
+                    <Input required type="email" value={usuarioForm.email} onChange={e => setUsuarioForm(f => ({ ...f, email: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Senha *</Label>
+                    <Input required type="password" value={usuarioForm.senha} onChange={e => setUsuarioForm(f => ({ ...f, senha: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Perfil *</Label>
+                    <Select value={usuarioForm.perfil_id || 'none'} onValueChange={v => setUsuarioForm(f => ({ ...f, perfil_id: v === 'none' ? '' : v }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione um perfil..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Selecione...</SelectItem>
+                        {perfis.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => { setShowUsuarioModal(false); setUsuarioApiError('') }}>Cancelar</Button>
+                    <Button type="submit" disabled={usuarioLoading}>
+                      {usuarioLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Salvar
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+        )}
 
         {/* ── Tab Configurações (admin only) ── */}
         {isAdmin && (

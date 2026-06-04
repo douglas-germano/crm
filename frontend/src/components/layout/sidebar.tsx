@@ -8,7 +8,6 @@ import {
   GitBranch,
   Briefcase,
   Building2,
-  UserCog,
   LogOut,
   ChevronsLeft,
   ChevronsRight,
@@ -18,9 +17,7 @@ import {
   ArrowLeft,
   ClipboardCheck,
   ShieldCheck,
-  Activity,
   Calendar,
-  BarChart2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -43,11 +40,10 @@ const navSections = [
   {
     label: 'Vendas',
     links: [
-      { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-      { href: '/leads',      label: 'Leads',      icon: Users           },
-      { href: '/pipeline',   label: 'Pipeline',   icon: GitBranch       },
-      { href: '/negocios',   label: 'Negócios',   icon: Briefcase       },
-      { href: '/atividades', label: 'Atividades', icon: Activity        },
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/leads',     label: 'Leads',     icon: Users           },
+      { href: '/pipeline',  label: 'Pipeline',  icon: GitBranch       },
+      { href: '/negocios',  label: 'Negócios',  icon: Briefcase       },
     ],
   },
   {
@@ -66,16 +62,9 @@ const navSections = [
     ],
   },
   {
-    label: 'Análise',
-    links: [
-      { href: '/relatorios', label: 'Relatórios', icon: BarChart2 },
-    ],
-  },
-  {
     label: 'Configuração',
     links: [
-      { href: '/usuarios', label: 'Usuários',      icon: UserCog  },
-      { href: '/perfil',   label: 'Configurações', icon: Settings },
+      { href: '/perfil', label: 'Configurações', icon: Settings },
     ],
   },
 ];
@@ -113,8 +102,8 @@ function NavLink({
           : 'justify-start gap-3 px-3 border-l-[3px]',
         active
           ? collapsed
-            ? 'bg-apex-orange/10 text-white hover:bg-apex-orange/15 hover:text-white'
-            : 'border-apex-orange bg-apex-orange/10 text-white hover:bg-apex-orange/15 hover:text-white'
+            ? 'bg-[#e60000] text-white hover:bg-[#cc0000] hover:text-white'
+            : 'border-[#e60000] bg-[#e60000] text-white hover:bg-[#cc0000] hover:text-white'
           : collapsed
             ? 'text-steel-300 hover:bg-white/8 hover:text-white'
             : 'border-transparent text-steel-300 hover:bg-white/8 hover:text-white'
@@ -124,7 +113,7 @@ function NavLink({
         <Icon
           className={cn(
             'h-[18px] w-[18px] shrink-0 transition-colors',
-            active ? 'text-apex-orange' : 'text-steel-400'
+            active ? 'text-white' : 'text-steel-400'
           )}
         />
         <span
