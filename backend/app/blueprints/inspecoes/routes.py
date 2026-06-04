@@ -31,6 +31,59 @@ def listar_templates(usuario_atual):
         return jsonify({'erro': 'Erro ao listar templates'}), 500
 
 
+@inspecoes_bp.route('/templates/<int:template_id>', methods=['GET'])
+@token_required
+def obter_template(usuario_atual, template_id):
+    try:
+        template = db.session.get(TemplateChecklist, template_id)
+        if not template:
+            return jsonify({'erro': 'Template não encontrado'}), 404
+        return jsonify(template.to_dict()), 200
+    except Exception as e:
+        current_app.logger.error(f"Erro ao obter template: {str(e)}")
+        return jsonify({'erro': 'Erro ao obter template'}), 500
+
+
+@inspecoes_bp.route('/templates/<int:template_id>', methods=['PUT'])
+@token_required
+def atualizar_template(usuario_atual, template_id):
+    try:
+        template = db.session.get(TemplateChecklist, template_id)
+        if not template:
+            return jsonify({'erro': 'Template não encontrado'}), 404
+
+        dados = request.get_json()
+        for campo in ['nome', 'regulacao', 'versao', 'ativo']:
+            if campo in dados:
+                setattr(template, campo, dados[campo])
+        if 'itens' in dados:
+            template.itens = dados['itens']
+
+        db.session.commit()
+        return jsonify({'mensagem': 'Template atualizado com sucesso', 'template': template.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Erro ao atualizar template: {str(e)}")
+        return jsonify({'erro': 'Erro ao atualizar template'}), 500
+
+
+@inspecoes_bp.route('/templates/<int:template_id>', methods=['DELETE'])
+@token_required
+def excluir_template(usuario_atual, template_id):
+    try:
+        template = db.session.get(TemplateChecklist, template_id)
+        if not template:
+            return jsonify({'erro': 'Template não encontrado'}), 404
+
+        template.ativo = False
+        db.session.commit()
+        return jsonify({'mensagem': 'Template desativado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Erro ao desativar template: {str(e)}")
+        return jsonify({'erro': 'Erro ao desativar template'}), 500
+
+
 @inspecoes_bp.route('/templates', methods=['POST'])
 @token_required
 def criar_template(usuario_atual):
@@ -110,6 +163,53 @@ def criar_contrato_amc(usuario_atual):
         db.session.rollback()
         current_app.logger.error(f"Erro ao criar contrato AMC: {str(e)}")
         return jsonify({'erro': 'Erro ao criar contrato AMC'}), 500
+
+
+@inspecoes_bp.route('/contratos-amc/<int:contrato_id>', methods=['PUT'])
+@token_required
+def atualizar_contrato_amc(usuario_atual, contrato_id):
+    try:
+        contrato = db.session.get(ContratoAMC, contrato_id)
+        if not contrato:
+            return jsonify({'erro': 'Contrato AMC não encontrado'}), 404
+
+        dados = request.get_json()
+        for campo in ['titulo', 'plano', 'valor_recorrente', 'status']:
+            if campo in dados:
+                setattr(contrato, campo, dados[campo])
+        if 'data_inicio' in dados and dados['data_inicio']:
+            contrato.data_inicio = datetime.fromisoformat(dados['data_inicio']).date()
+        if 'data_fim' in dados:
+            contrato.data_fim = datetime.fromisoformat(dados['data_fim']).date() if dados['data_fim'] else None
+        if 'empresa_id' in dados:
+            empresa = db.session.get(Empresa, dados['empresa_id'])
+            if not empresa:
+                return jsonify({'erro': 'Empresa não encontrada'}), 404
+            contrato.empresa_id = dados['empresa_id']
+
+        db.session.commit()
+        return jsonify({'mensagem': 'Contrato AMC atualizado com sucesso', 'contrato': contrato.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Erro ao atualizar contrato AMC: {str(e)}")
+        return jsonify({'erro': 'Erro ao atualizar contrato AMC'}), 500
+
+
+@inspecoes_bp.route('/contratos-amc/<int:contrato_id>', methods=['DELETE'])
+@token_required
+def excluir_contrato_amc(usuario_atual, contrato_id):
+    try:
+        contrato = db.session.get(ContratoAMC, contrato_id)
+        if not contrato:
+            return jsonify({'erro': 'Contrato AMC não encontrado'}), 404
+
+        db.session.delete(contrato)
+        db.session.commit()
+        return jsonify({'mensagem': 'Contrato AMC excluído com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Erro ao excluir contrato AMC: {str(e)}")
+        return jsonify({'erro': 'Erro ao excluir contrato AMC'}), 500
 
 
 # ─── INSPEÇÕES ────────────────────────────────────────────────────────────────

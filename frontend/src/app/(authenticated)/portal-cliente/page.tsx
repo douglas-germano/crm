@@ -39,8 +39,8 @@ export default function PortalClientePage() {
           setInspecoes(resInspecoes.data);
           initialLoadDone.current = true;
         }
-      } catch (err) {
-        console.error('Erro ao carregar dados iniciais', err);
+      } catch {
+        // erro silencioso — usuário vê estado vazio
       } finally {
         setLoading(false);
       }
@@ -60,8 +60,8 @@ export default function PortalClientePage() {
         ]);
         setAtivos(resAtivos.data);
         setInspecoes(resInspecoes.data);
-      } catch (err) {
-        console.error('Erro ao buscar ativos e inspeções da empresa', err);
+      } catch {
+        // erro silencioso — usuário vê estado vazio ao trocar de empresa
       } finally {
         setLoading(false);
       }
@@ -84,8 +84,8 @@ export default function PortalClientePage() {
       a.download = `laudo-${inspecaoId}.pdf`;
       a.click();
       URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error('Erro ao baixar laudo', err);
+    } catch {
+      // falha no download — o navegador exibirá erro nativo
     }
   };
 

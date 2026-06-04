@@ -44,10 +44,9 @@ export default function InspecaoCampoPage() {
         setObservacoesGerais(dataInspecao.observacoes_gerais || '');
         setArtNumero(dataInspecao.art_numero || '');
 
-        // Buscar o template do checklist associado
-        const resTemplate = await api.get(`/api/inspecoes/templates`);
-        const listTemplates: TemplateChecklist[] = resTemplate.data;
-        const currentTemplate = listTemplates.find(t => t.id === dataInspecao.template_id) || null;
+        // Buscar o template do checklist associado diretamente pelo ID
+        const resTemplate = await api.get(`/api/inspecoes/templates/${dataInspecao.template_id}`);
+        const currentTemplate: TemplateChecklist = resTemplate.data;
         setTemplate(currentTemplate);
 
         // Inicializar respostas
@@ -74,8 +73,8 @@ export default function InspecaoCampoPage() {
           });
         }
         setRespostas(mapaRespostas);
-      } catch (err) {
-        console.error('Erro ao carregar dados da inspeção', err);
+      } catch {
+        // erro tratado pelo estado vazio — mensagem exibida na UI
       } finally {
         setLoading(false);
       }
@@ -135,17 +134,31 @@ export default function InspecaoCampoPage() {
 
       await api.put(`/api/inspecoes/${inspecaoId}/campo`, payload);
       setSucesso(true);
-    } catch (err) {
-      console.error('Erro ao salvar relatório de inspeção', err);
+    } catch {
+      // erro de rede — o botão fica habilitado novamente para nova tentativa
     } finally {
       setSalvando(false);
     }
   };
 
-  const baixarPdfLaudo = () => {
-    const token = localStorage.getItem('token');
-    const url = `${api.defaults.baseURL}/api/inspecoes/${inspecaoId}/pdf?token=${token}`;
-    window.open(url, '_blank');
+  const baixarPdfLaudo = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const url = `${api.defaults.baseURL}/api/inspecoes/${inspecaoId}/pdf`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Erro ao baixar PDF');
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `laudo-inspecao-${inspecaoId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // falha no download — o navegador exibirá erro nativo
+    }
   };
 
   if (loading) {

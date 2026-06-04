@@ -118,8 +118,7 @@ export default function PipelinePage() {
       })
       setMovingLead(null)
       await mutateBoard()
-    } catch (err) {
-      console.error(err)
+    } catch {
       setActionError('Nao foi possivel mover o lead. Tente novamente.')
     }
   }
@@ -196,8 +195,7 @@ export default function PipelinePage() {
       setSelectedEstagioId(null)
       setSearchLead('')
       await mutateBoard()
-    } catch (err) {
-      console.error(err)
+    } catch {
       setActionError('Nao foi possivel adicionar o lead ao pipeline.')
     } finally {
       setAddingLead(false)

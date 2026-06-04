@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Handshake, CircleDollarSign, AlertCircle, Plus, Search, Loader2, RefreshCw } from 'lucide-react';
+import { Handshake, CircleDollarSign, AlertCircle, Plus, Search, Loader2, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 
 const fetcher = (url: string) => api.get(url).then(r => r.data);
 const PER_PAGE = 10;
@@ -56,6 +56,8 @@ export default function ContratosAmcPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [openModal, setOpenModal] = useState(false);
+  const [editingContrato, setEditingContrato] = useState<ContratoAMC | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [apiError, setApiError] = useState('');
@@ -87,9 +89,23 @@ export default function ContratosAmcPage() {
   const totalSuspensos = contratos.filter(c => c.status === 'suspenso').length;
   const mrr = contratos.filter(c => c.status === 'ativo').reduce((acc, c) => acc + calcMRR(c), 0);
 
-  const resetForm = () => { setForm({ ...EMPTY_FORM }); setApiError(''); };
+  const resetForm = () => { setForm({ ...EMPTY_FORM }); setApiError(''); setEditingContrato(null); };
 
-  const handleCriar = async (e: React.FormEvent) => {
+  const abrirEditar = (contrato: ContratoAMC) => {
+    setEditingContrato(contrato);
+    setForm({
+      titulo: contrato.titulo,
+      empresa_id: String(contrato.empresa_id),
+      plano: contrato.plano,
+      valor_recorrente: String(contrato.valor_recorrente),
+      data_inicio: contrato.data_inicio,
+      data_fim: contrato.data_fim ?? '',
+    });
+    setApiError('');
+    setOpenModal(true);
+  };
+
+  const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.titulo || !form.empresa_id || !form.data_inicio) {
       setApiError('Título, empresa e data de início são obrigatórios');
@@ -98,24 +114,42 @@ export default function ContratosAmcPage() {
     setSalvando(true);
     setApiError('');
     try {
-      await api.post('/api/inspecoes/contratos-amc', {
+      const payload = {
         titulo: form.titulo,
         empresa_id: parseInt(form.empresa_id),
         plano: form.plano,
         valor_recorrente: parseFloat(form.valor_recorrente) || 0,
         data_inicio: form.data_inicio,
         data_fim: form.data_fim || null,
-        status: 'ativo',
-      });
+      };
+      if (editingContrato) {
+        await api.put(`/api/inspecoes/contratos-amc/${editingContrato.id}`, payload);
+        toast('Contrato AMC atualizado com sucesso!');
+      } else {
+        await api.post('/api/inspecoes/contratos-amc', { ...payload, status: 'ativo' });
+        toast('Contrato AMC criado com sucesso!');
+      }
       resetForm();
       setOpenModal(false);
       mutate();
-      toast('Contrato AMC criado com sucesso!');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { erro?: string; message?: string } } };
-      setApiError(error.response?.data?.erro || error.response?.data?.message || 'Erro ao criar contrato');
+      setApiError(error.response?.data?.erro || error.response?.data?.message || 'Erro ao salvar contrato');
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleExcluir = async () => {
+    if (!deleteId) return;
+    try {
+      await api.delete(`/api/inspecoes/contratos-amc/${deleteId}`);
+      mutate();
+      toast('Contrato excluído com sucesso!');
+    } catch {
+      toast('Erro ao excluir contrato');
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -129,7 +163,7 @@ export default function ContratosAmcPage() {
             Gestão de contratos de manutenção e receita recorrente (MRR)
           </p>
         </div>
-        <Button onClick={() => { resetForm(); setOpenModal(true); }}>
+        <Button onClick={() => { resetForm(); setEditingContrato(null); setOpenModal(true); }}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Contrato
         </Button>
@@ -243,6 +277,7 @@ export default function ContratosAmcPage() {
                   <TableHead className="text-right">MRR</TableHead>
                   <TableHead>Início</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -268,6 +303,16 @@ export default function ContratosAmcPage() {
                         {STATUS_LABEL[c.status] ?? c.status}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => abrirEditar(c)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => setDeleteId(c.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -289,14 +334,14 @@ export default function ContratosAmcPage() {
         </div>
       )}
 
-      {/* Create Dialog */}
+      {/* Create/Edit Dialog */}
       <Dialog open={openModal} onOpenChange={open => { if (!open) { setOpenModal(false); resetForm(); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Novo Contrato AMC</DialogTitle>
-            <DialogDescription>Cadastre um novo contrato de manutenção recorrente.</DialogDescription>
+            <DialogTitle>{editingContrato ? 'Editar Contrato AMC' : 'Novo Contrato AMC'}</DialogTitle>
+            <DialogDescription>{editingContrato ? 'Atualize os dados do contrato.' : 'Cadastre um novo contrato de manutenção recorrente.'}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCriar} className="space-y-4 pt-2">
+          <form onSubmit={handleSalvar} className="space-y-4 pt-2">
             {apiError && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">{apiError}</div>
             )}
@@ -366,10 +411,24 @@ export default function ContratosAmcPage() {
               <Button type="button" variant="outline" onClick={() => { setOpenModal(false); resetForm(); }}>Cancelar</Button>
               <Button type="submit" disabled={salvando}>
                 {salvando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Salvar
+                {editingContrato ? 'Atualizar' : 'Salvar'}
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <Dialog open={deleteId !== null} onOpenChange={open => { if (!open) setDeleteId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Excluir contrato?</DialogTitle>
+            <DialogDescription>Esta ação não pode ser desfeita. O contrato será removido permanentemente.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleExcluir}>Excluir</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
