@@ -464,7 +464,7 @@ def listar_permissoes():
     }), 200
 
 
-# Rota para logs de atividade
+# Logs são intencionalmente somente leitura — imutabilidade garante trilha de auditoria confiável.
 @usuarios_bp.route('/logs', methods=['GET'])
 @requer_permissao('visualizar_logs')
 def listar_logs():
@@ -490,14 +490,14 @@ def listar_logs():
             data_inicio = datetime.fromisoformat(data_inicio)
             query = query.filter(LogAtividade.data_hora >= data_inicio)
         except ValueError:
-            pass
+            return jsonify({'erro': 'Formato de data_inicio inválido. Use ISO 8601 (ex: 2026-01-01T00:00:00)'}), 400
 
     if data_fim:
         try:
             data_fim = datetime.fromisoformat(data_fim)
             query = query.filter(LogAtividade.data_hora <= data_fim)
         except ValueError:
-            pass
+            return jsonify({'erro': 'Formato de data_fim inválido. Use ISO 8601 (ex: 2026-12-31T23:59:59)'}), 400
 
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 50, type=int), 200)

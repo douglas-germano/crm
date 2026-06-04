@@ -10,13 +10,27 @@ from app.utils.decorators import token_required
 def listar_servicos(usuario_atual):
     try:
         ativo = request.args.get('ativo', None)
+        page = request.args.get('page', type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+
         query = Servico.query
 
         if ativo is not None:
             query = query.filter(Servico.ativo == (ativo.lower() == 'true'))
 
-        servicos = query.order_by(Servico.nome).all()
-        return jsonify([s.to_dict() for s in servicos]), 200
+        query = query.order_by(Servico.nome)
+
+        if page:
+            pagination = query.paginate(page=page, per_page=min(per_page, 100))
+            return jsonify({
+                'servicos': [s.to_dict() for s in pagination.items],
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'page': page,
+                'per_page': per_page,
+            }), 200
+
+        return jsonify([s.to_dict() for s in query.all()]), 200
     except Exception as e:
         current_app.logger.error(f"Erro ao listar serviços: {str(e)}")
         return jsonify({'erro': 'Erro ao listar serviços'}), 500

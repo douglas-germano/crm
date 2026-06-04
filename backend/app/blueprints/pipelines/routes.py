@@ -25,10 +25,25 @@ def normalizar_posicoes_estagio(estagio_id):
 @jwt_required()
 def listar_pipelines():
     try:
-        pipelines = Pipeline.query.all()
-        return jsonify({
-            'pipelines': [pipeline.to_dict() for pipeline in pipelines]
-        }), 200
+        page = request.args.get('page', type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        ativo = request.args.get('ativo')
+
+        query = Pipeline.query
+        if ativo is not None:
+            query = query.filter(Pipeline.ativo == (ativo.lower() == 'true'))
+
+        if page:
+            pagination = query.paginate(page=page, per_page=min(per_page, 100))
+            return jsonify({
+                'pipelines': [p.to_dict() for p in pagination.items],
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'page': page,
+                'per_page': per_page,
+            }), 200
+
+        return jsonify({'pipelines': [p.to_dict() for p in query.all()]}), 200
     except Exception as e:
         return jsonify({'erro': f'Erro ao listar pipelines: {str(e)}'}), 500
 

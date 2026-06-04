@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/contexts/toast-context'
 
 const fetcher = (url: string) => api.get(url).then(r => r.data)
 
@@ -54,6 +55,7 @@ function statusBadgeClass(status: string) {
 }
 
 export default function LeadsPage() {
+  const { toast } = useToast()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
   const [search, setSearch] = useState('')
@@ -175,8 +177,8 @@ export default function LeadsPage() {
       await api.delete(`/api/leads/${id}`)
       setDeleteId(null)
       mutate()
-    } catch (err) {
-      console.error(err)
+    } catch {
+      toast('Erro ao excluir lead. Tente novamente.')
     }
   }
 

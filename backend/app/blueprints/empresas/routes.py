@@ -4,6 +4,20 @@ from app.models import Empresa, Contato
 from app.blueprints.empresas import empresas_bp
 from app.utils.decorators import token_required
 from sqlalchemy import desc, or_
+import re
+
+
+def _validar_cnpj(cnpj: str) -> bool:
+    cnpj = re.sub(r'\D', '', cnpj)
+    if len(cnpj) != 14 or cnpj == cnpj[0] * 14:
+        return False
+    def calc(cnpj, pesos):
+        s = sum(int(c) * p for c, p in zip(cnpj, pesos))
+        r = s % 11
+        return 0 if r < 2 else 11 - r
+    p1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+    p2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+    return calc(cnpj[:12], p1) == int(cnpj[12]) and calc(cnpj[:13], p2) == int(cnpj[13])
 
 
 @empresas_bp.route('', methods=['GET'])
@@ -69,8 +83,12 @@ def criar_empresa(usuario_atual):
         if not dados.get('razao_social'):
             return jsonify({'erro': 'Razão social é obrigatória'}), 400
 
+        cnpj = dados.get('cnpj')
+        if cnpj and not _validar_cnpj(cnpj):
+            return jsonify({'erro': 'CNPJ inválido'}), 400
+
         empresa = Empresa(
-            cnpj=dados.get('cnpj'),
+            cnpj=cnpj,
             razao_social=dados['razao_social'],
             nome_fantasia=dados.get('nome_fantasia'),
             ramo=dados.get('ramo'),
@@ -104,6 +122,9 @@ def atualizar_empresa(usuario_atual, empresa_id):
             return jsonify({'erro': 'Empresa não encontrada'}), 404
 
         dados = request.get_json()
+
+        if 'cnpj' in dados and dados['cnpj'] and not _validar_cnpj(dados['cnpj']):
+            return jsonify({'erro': 'CNPJ inválido'}), 400
 
         campos = ['cnpj', 'razao_social', 'nome_fantasia', 'ramo', 'porte',
                   'endereco', 'cidade', 'estado', 'cep', 'telefone',
