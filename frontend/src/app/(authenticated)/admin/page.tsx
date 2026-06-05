@@ -66,7 +66,7 @@ export default function AdminPage() {
     setInspectError('');
   };
 
-  if (loading) return <div className="p-8 flex items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-brand-500" /></div>;
+  if (loading) return <div className="p-8 flex items-center justify-center"><Loader2 className="animate-spin w-6 h-6 text-muted-foreground" /></div>;
 
   if (error) {
     return (
@@ -84,12 +84,9 @@ export default function AdminPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-display font-bold tracking-tight flex items-center gap-3">
-            <ShieldAlert className="w-8 h-8 text-brand-500" />
-            Central de Servidores SaaS
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Monitorando {tenants.length} Workspaces (Schemes Isolados).
+          <h2 className="text-2xl font-semibold tracking-tight">Central de Servidores SaaS</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Monitorando {tenants.length} workspace{tenants.length !== 1 ? 's' : ''} isolados.
           </p>
         </div>
       </div>
@@ -98,12 +95,12 @@ export default function AdminPage() {
         {/* Painel de Contas */}
         <div className="space-y-4">
           {tenants.map(t => (
-            <Card key={t.id} className={inspecting === t.id ? 'border-brand-500 ring-1 ring-brand-500' : ''}>
+            <Card key={t.id} className={inspecting === t.id ? 'border-primary' : ''}>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center">
                   <div>
                     <h3 className="text-lg font-bold">{t.nome_fantasia}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Workspace: <code className="text-brand-500 font-mono">"{t.subdominio}"</code></p>
+                    <p className="text-sm text-muted-foreground mb-4">Workspace: <code className="font-mono text-foreground">"{t.subdominio}"</code></p>
                     
                     <div className="flex gap-4 text-xs font-medium border p-2 rounded bg-muted/30 w-fit">
                        <span className="flex items-center gap-1"><Users className="w-3 h-3 text-steel-500"/> {t.estatisticas.usuarios} Usuários</span>
@@ -138,12 +135,12 @@ export default function AdminPage() {
         <div>
           {inspecting && tenantInspecionando ? (
             <div className="sticky top-6">
-              <Card className="border-brand-500 shadow-xl shadow-brand-500/10">
-                <CardHeader className="bg-brand-500/5 pb-4">
+              <Card className="border-primary">
+                <CardHeader className="pb-3 border-b">
                    <div className="flex justify-between items-start">
                      <div>
-                       <CardTitle className="flex items-center gap-2">
-                         <Eye className="w-5 h-5 text-brand-500" />
+                       <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                         <Eye className="w-4 h-4 text-muted-foreground" />
                          Visão Raio-X
                        </CardTitle>
                        <CardDescription className="mt-1">
@@ -154,7 +151,7 @@ export default function AdminPage() {
                    </div>
                 </CardHeader>
                 <CardContent className="pt-6 max-h-[600px] overflow-auto">
-                   <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 border-b pb-2">
+                   <h4 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4 border-b pb-2">
                      Recurso: {recursoAtivo}
                    </h4>
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 
 export default function AdminSettings() {
@@ -48,31 +49,19 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="space-y-6 pb-16">
-
-      {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-display font-bold tracking-tight flex items-center gap-3">
-          <Settings2 className="w-6 h-6 text-brand-500 shrink-0" />
-          Configurações da Plataforma
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Toggles globais do SaaS. Ajustes que se aplicam a todas as instâncias e schemas ativos.
-        </p>
-      </div>
-
+    <div className="space-y-6 pb-8">
       <div className="grid gap-5 md:grid-cols-2">
 
         {/* Acesso e Segurança */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-brand-500" />
+          <CardHeader className="pb-3 border-b">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-muted-foreground" />
               Acesso e Segurança Global
             </CardTitle>
             <CardDescription>Controle quem pode entrar na plataforma e qual protocolo exigir.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent className="pt-5 space-y-5">
             <div className="flex items-center justify-between gap-4">
               <div className="space-y-0.5 flex-1">
                 <Label className="text-sm font-medium">Inscrições Abertas</Label>
@@ -83,11 +72,13 @@ export default function AdminSettings() {
               <Switch
                 checked={allowRegistration}
                 onCheckedChange={setAllowRegistration}
-                className="data-[state=checked]:bg-brand-500 shrink-0"
+                className="shrink-0"
               />
             </div>
 
-            <div className="flex items-center justify-between gap-4 pt-4 border-t">
+            <Separator />
+
+            <div className="flex items-center justify-between gap-4">
               <div className="space-y-0.5 flex-1">
                 <div className="flex items-center gap-2">
                   <Label className="text-sm font-medium">Forçar Autenticação 2FA</Label>
@@ -101,7 +92,7 @@ export default function AdminSettings() {
                 checked={require2FA}
                 onCheckedChange={setRequire2FA}
                 disabled
-                className="data-[state=checked]:bg-brand-500 shrink-0"
+                className="shrink-0"
               />
             </div>
           </CardContent>
@@ -109,14 +100,14 @@ export default function AdminSettings() {
 
         {/* Protocolos de Emergência */}
         <Card className="border-destructive/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2 text-destructive">
+          <CardHeader className="pb-3 border-b border-destructive/10">
+            <CardTitle className="text-base font-semibold text-destructive flex items-center gap-2">
               <GlobeLock className="w-4 h-4" />
               Protocolos de Emergência
             </CardTitle>
             <CardDescription>Ações que afetam sessões e conexões de todos os clientes.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent className="pt-5 space-y-5">
             <div className="flex items-center justify-between gap-4">
               <div className="space-y-0.5 flex-1">
                 <Label className="text-sm font-medium">Modo Manutenção (503)</Label>
@@ -131,21 +122,22 @@ export default function AdminSettings() {
               />
             </div>
 
-            <div className="pt-4 border-t">
+            <Separator />
+
+            <div>
               <Button
                 variant="destructive"
                 size="sm"
-                className="w-full font-semibold"
+                className="w-full"
                 onClick={handleInvalidateJwts}
                 disabled={invalidatingJwt || jwtDone}
               >
-                {invalidatingJwt ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : jwtDone ? (
-                  <Check className="w-4 h-4 mr-2" />
-                ) : (
-                  <Lock className="w-4 h-4 mr-2" />
-                )}
+                {invalidatingJwt
+                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  : jwtDone
+                  ? <Check className="w-4 h-4 mr-2" />
+                  : <Lock className="w-4 h-4 mr-2" />
+                }
                 {jwtDone ? 'JWTs invalidados!' : 'Invalidar JWTs Ativos'}
               </Button>
               {jwtDone && (
@@ -159,53 +151,56 @@ export default function AdminSettings() {
 
         {/* E-mail & Mensageria */}
         <Card className="md:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Mail className="w-4 h-4 text-accent-500" />
-              Motores de E-mail & Mensageria
+          <CardHeader className="pb-3 border-b">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <Mail className="w-4 h-4 text-muted-foreground" />
+              E-mail & Mensageria
             </CardTitle>
             <CardDescription>Apontamentos DNS e chaves atreladas ao Brevo API.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
-            <div className="bg-muted/40 p-4 rounded-lg border space-y-1.5">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Provedor</span>
-              <p className="text-sm font-semibold flex gap-2 items-center">
-                <KeySquare className="w-4 h-4 text-emerald-500" />
-                Brevo Transactional
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">Ativo</Badge>
-              </p>
-            </div>
-
-            <div className="bg-muted/40 p-4 rounded-lg border space-y-2">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Cota Mensal</span>
-              <div className="flex items-center gap-2">
-                <div className="h-2 flex-1 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-accent-500 w-[12%] rounded-full" />
+          <CardContent className="pt-5">
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Provedor</p>
+                <div className="flex items-center gap-2">
+                  <KeySquare className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium text-foreground">Brevo Transactional</span>
                 </div>
-                <span className="text-xs text-muted-foreground font-mono tabular-nums">12%</span>
+                <p className="text-xs text-green-600 font-medium">Ativo</p>
               </div>
-            </div>
 
-            <div className="bg-muted/40 p-4 rounded-lg border flex flex-col justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={handleTestGateway}
-                disabled={testingGateway}
-              >
-                {testingGateway ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : gatewayResult === 'ok' ? (
-                  <Check className="w-4 h-4 mr-2 text-emerald-600" />
-                ) : gatewayResult === 'error' ? (
-                  <AlertCircle className="w-4 h-4 mr-2 text-destructive" />
-                ) : null}
-                {gatewayResult === 'ok' ? 'Gateway OK' : 'Testar Gateway'}
-              </Button>
-              {gatewayResult === 'error' && (
-                <p className="text-xs text-destructive text-center">Falha na conexão com o Brevo.</p>
-              )}
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Cota Mensal</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-foreground/30 w-[12%] rounded-full" />
+                  </div>
+                  <span className="text-xs text-muted-foreground font-mono tabular-nums shrink-0">12%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">~360 de 3.000 e-mails usados</p>
+              </div>
+
+              <div className="flex flex-col justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestGateway}
+                  disabled={testingGateway}
+                >
+                  {testingGateway
+                    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    : gatewayResult === 'ok'
+                    ? <Check className="w-4 h-4 mr-2 text-green-600" />
+                    : gatewayResult === 'error'
+                    ? <AlertCircle className="w-4 h-4 mr-2 text-destructive" />
+                    : null
+                  }
+                  {gatewayResult === 'ok' ? 'Gateway OK' : 'Testar Gateway'}
+                </Button>
+                {gatewayResult === 'error' && (
+                  <p className="text-xs text-destructive">Falha na conexão com o Brevo.</p>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -215,24 +210,20 @@ export default function AdminSettings() {
       {/* Footer */}
       <div className="flex items-center justify-end gap-3 pt-2 border-t">
         {saved && (
-          <span className="text-sm text-emerald-600 flex items-center gap-1.5">
+          <span className="text-sm text-green-600 flex items-center gap-1.5">
             <Check className="w-4 h-4" /> Configurações salvas.
           </span>
         )}
-        <Button
-          onClick={handleSave}
-          disabled={saving || saved}
-          className="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6"
-        >
-          {saving ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : saved ? (
-            <Check className="w-4 h-4 mr-2" />
-          ) : null}
+        <Button onClick={handleSave} disabled={saving || saved}>
+          {saving
+            ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            : saved
+            ? <Check className="w-4 h-4 mr-2" />
+            : null
+          }
           {saved ? 'Salvo!' : 'Salvar Modificações'}
         </Button>
       </div>
-
     </div>
   );
 }
