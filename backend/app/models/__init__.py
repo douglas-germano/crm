@@ -14,3 +14,4 @@ from app.models.ativo import Ativo
 from app.models.contrato_amc import ContratoAMC
 from app.models.template_checklist import TemplateChecklist
 from app.models.inspecao import Inspecao
+from app.models.webhook_integracao import WebhookIntegracao

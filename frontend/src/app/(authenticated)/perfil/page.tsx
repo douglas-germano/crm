@@ -80,38 +80,82 @@ export default function PerfilPage() {
     ? (typeof user.perfil === 'string' ? user.perfil : user.perfil.nome) === 'Administrador'
     : false
 
-  // ── Webhook (admin) ──────────────────────────────────────────────────────────
-  const [tokenVisible, setTokenVisible] = useState(false)
-  const [copied, setCopied] = useState<'token' | 'url' | 'curl' | null>(null)
-  const [regenerating, setRegenerating] = useState(false)
-  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
+  // ── Webhook / Integrações (admin) ────────────────────────────────────────────
+  interface IntegracaoItem {
+    id: number; nome: string; token: string; origem_padrao: string
+    descricao?: string; ativo: boolean; total_leads: number; data_criacao: string
+  }
+
+  const [copied, setCopied] = useState<string | null>(null)
+  const [showIntegracaoModal, setShowIntegracaoModal] = useState(false)
+  const [integracaoForm, setIntegracaoForm] = useState({ nome: '', origem_padrao: '', descricao: '' })
+  const [integracaoLoading, setIntegracaoLoading] = useState(false)
+  const [integracaoError, setIntegracaoError] = useState('')
+  const [deletingIntegracao, setDeletingIntegracao] = useState<IntegracaoItem | null>(null)
+  const [visibleTokens, setVisibleTokens] = useState<Set<number>>(new Set())
+  const [regeneratingId, setRegeneratingId] = useState<number | null>(null)
 
   const { data: webhookConfig, mutate: mutateWebhook } = useSWR(
     isAdmin ? '/api/webhook/config' : null, fetcher
   )
-  const webhookToken: string = webhookConfig?.webhook_token ?? ''
+  const { data: integracoesData, mutate: mutateIntegracoes } = useSWR(
+    isAdmin ? '/api/webhook/integracoes' : null, fetcher
+  )
   const webhookUrl: string = webhookConfig?.webhook_url ?? ''
+  const integracoes: IntegracaoItem[] = integracoesData?.integracoes ?? []
 
-  const copyToClipboard = async (text: string, field: 'token' | 'url' | 'curl') => {
+  const copyToClipboard = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text)
-    setCopied(field)
+    setCopied(key)
     setTimeout(() => setCopied(null), 2000)
   }
 
-  const handleRegenerate = async () => {
-    setRegenerating(true)
-    try {
-      await api.post('/api/webhook/token/regenerate')
-      mutateWebhook()
-      setShowRegenerateConfirm(false)
-      setTokenVisible(false)
-    } catch { /* silencioso */ }
-    finally { setRegenerating(false) }
+  const toggleTokenVisible = (id: number) => {
+    setVisibleTokens(prev => {
+      const s = new Set(prev)
+      s.has(id) ? s.delete(id) : s.add(id)
+      return s
+    })
   }
 
-  const curlExample = webhookToken
-    ? `curl -X POST ${webhookUrl} \\\n  -H "Content-Type: application/json" \\\n  -H "X-Webhook-Token: ${webhookToken}" \\\n  -d '{"nome":"João Silva","email":"joao@empresa.com","telefone":"11999999999","empresa":"Empresa X","origem":"Site"}'`
-    : ''
+  const handleCreateIntegracao = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!integracaoForm.nome.trim()) { setIntegracaoError('Nome é obrigatório'); return }
+    setIntegracaoLoading(true); setIntegracaoError('')
+    try {
+      await api.post('/api/webhook/integracoes', integracaoForm)
+      setShowIntegracaoModal(false)
+      setIntegracaoForm({ nome: '', origem_padrao: '', descricao: '' })
+      mutateIntegracoes()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string } } }
+      setIntegracaoError(error.response?.data?.erro || 'Erro ao criar integração')
+    } finally { setIntegracaoLoading(false) }
+  }
+
+  const handleDeleteIntegracao = async () => {
+    if (!deletingIntegracao) return
+    setIntegracaoLoading(true)
+    try {
+      await api.delete(`/api/webhook/integracoes/${deletingIntegracao.id}`)
+      setDeletingIntegracao(null)
+      mutateIntegracoes()
+    } catch { /* silencioso */ }
+    finally { setIntegracaoLoading(false) }
+  }
+
+  const handleRegenerateToken = async (id: number) => {
+    setRegeneratingId(id)
+    try {
+      await api.post(`/api/webhook/integracoes/${id}/token`)
+      mutateIntegracoes()
+      setVisibleTokens(prev => { const s = new Set(prev); s.delete(id); return s })
+    } catch { /* silencioso */ }
+    finally { setRegeneratingId(null) }
+  }
+
+  const buildCurl = (token: string) =>
+    `curl -X POST ${webhookUrl} \\\n  -H "Content-Type: application/json" \\\n  -H "X-Webhook-Token: ${token}" \\\n  -d '{"nome":"João Silva","email":"joao@empresa.com","telefone":"11999999999","empresa":"Empresa X"}'`
 
   // ── Usuários (admin) ─────────────────────────────────────────────────────────
   const [showUsuarioModal, setShowUsuarioModal] = useState(false)
@@ -851,24 +895,28 @@ export default function PerfilPage() {
 
         {/* ── Tab Integrações (admin only) ── */}
         {isAdmin && (
-          <TabsContent value="integracoes" className="mt-4 space-y-6">
+          <TabsContent value="integracoes" className="mt-4 space-y-4">
 
-            {/* Webhook card */}
+            {/* Header: URL global + botão criar */}
             <Card>
               <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Webhook className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-base">Webhook de Leads</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Webhook className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-base">Webhook de Leads</CardTitle>
+                  </div>
+                  <Button size="sm" onClick={() => { setIntegracaoForm({ nome: '', origem_padrao: '', descricao: '' }); setIntegracaoError(''); setShowIntegracaoModal(true) }}>
+                    <Plus className="h-4 w-4 mr-1" /> Nova Integração
+                  </Button>
                 </div>
                 <CardDescription>
-                  Envie leads automaticamente de formulários, anúncios e integrações externas para este workspace.
+                  Cada integração tem seu próprio token. Leads chegam com a origem preenchida automaticamente.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5">
-
-                {/* URL do Webhook */}
+              <CardContent className="space-y-3">
+                {/* URL do endpoint */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">URL do Endpoint</Label>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">URL do Endpoint (igual para todas)</Label>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-sm bg-muted px-3 py-2 rounded-md font-mono truncate">
                       {webhookUrl || 'Carregando...'}
@@ -880,123 +928,179 @@ export default function PerfilPage() {
                   </div>
                 </div>
 
-                {/* Token */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Token de Autenticação</Label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <code className="block text-sm bg-muted px-3 py-2 rounded-md font-mono truncate pr-10">
-                        {!webhookToken
-                          ? 'Carregando...'
-                          : tokenVisible
-                          ? webhookToken
-                          : '•'.repeat(Math.min(webhookToken.length, 40))}
-                      </code>
-                      <button
-                        type="button"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        onClick={() => setTokenVisible(v => !v)}
-                      >
-                        {tokenVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <Button variant="outline" size="icon" className="h-9 w-9 shrink-0"
-                      onClick={() => copyToClipboard(webhookToken, 'token')} disabled={!webhookToken}>
-                      {copied === 'token' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                    <Button variant="outline" size="icon" className="h-9 w-9 shrink-0text-muted-foreground"
-                      onClick={() => setShowRegenerateConfirm(true)} disabled={!webhookToken}>
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Envie o token no header <code className="bg-muted px-1 rounded text-[11px]">X-Webhook-Token</code> de cada requisição.
-                  </p>
-                </div>
-
-                <Separator />
-
-                {/* Campos suportados */}
-                <div className="space-y-3">
-                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Campos do Payload (JSON)</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-foreground">Obrigatórios</p>
-                      {[
-                        { field: 'nome', aliases: 'name, full_name' },
-                        { field: 'email', aliases: 'email_address' },
-                      ].map(({ field, aliases }) => (
-                        <div key={field} className="flex items-start gap-2 text-xs">
-                          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px] shrink-0">{field}</code>
-                          <span className="text-muted-foreground">ou {aliases}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-foreground">Opcionais</p>
-                      {[
-                        { field: 'telefone', aliases: 'phone, mobile' },
-                        { field: 'empresa', aliases: 'company' },
-                        { field: 'cargo', aliases: 'job_title, position' },
-                        { field: 'interesse', aliases: 'interest, subject' },
-                        { field: 'origem', aliases: 'source, utm_source' },
-                        { field: 'observacoes', aliases: 'message, notes' },
-                      ].map(({ field, aliases }) => (
-                        <div key={field} className="flex items-start gap-2 text-xs">
-                          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px] shrink-0">{field}</code>
-                          <span className="text-muted-foreground">ou {aliases}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Exemplo cURL */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Exemplo cURL</Label>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
-                      onClick={() => copyToClipboard(curlExample, 'curl')} disabled={!curlExample}>
-                      {copied === 'curl' ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                      {copied === 'curl' ? 'Copiado!' : 'Copiar'}
-                    </Button>
-                  </div>
-                  <pre className="text-[11px] bg-muted rounded-md p-3 overflow-x-auto font-mono leading-relaxed whitespace-pre-wrap break-all">
-                    {curlExample || 'Carregando token...'}
-                  </pre>
-                </div>
-
-                {/* Integrações populares */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Compatível com</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Meta Ads (Lead Ads)', 'Google Ads', 'RD Station', 'Zapier', 'Make (Integromat)', 'Typeform', 'Tally', 'Google Forms'].map(tool => (
-                      <Badge key={tool} variant="outline" className="text-xs font-normal">{tool}</Badge>
+                {/* Campos aceitos */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 pt-1">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground mb-1.5">Obrigatórios</p>
+                    {[{ f: 'nome', a: 'name, full_name' }, { f: 'email', a: 'email_address' }].map(({ f, a }) => (
+                      <div key={f} className="flex items-center gap-2 text-xs mb-1">
+                        <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px]">{f}</code>
+                        <span className="text-muted-foreground">ou {a}</span>
+                      </div>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Configure qualquer ferramenta que envie requisições HTTP POST com JSON para receber leads automaticamente.
-                  </p>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground mb-1.5">Opcionais</p>
+                    {[
+                      { f: 'telefone', a: 'phone' }, { f: 'empresa', a: 'company' },
+                      { f: 'cargo', a: 'job_title' }, { f: 'interesse', a: 'interest' },
+                      { f: 'observacoes', a: 'message' },
+                    ].map(({ f, a }) => (
+                      <div key={f} className="flex items-center gap-2 text-xs mb-1">
+                        <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px]">{f}</code>
+                        <span className="text-muted-foreground">ou {a}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Modal de confirmação de regeneração */}
-            <Dialog open={showRegenerateConfirm} onOpenChange={open => { if (!open) setShowRegenerateConfirm(false) }}>
+            {/* Lista de integrações */}
+            {integracoes.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-14 text-muted-foreground gap-3">
+                  <Webhook className="h-10 w-10 opacity-20" />
+                  <div className="text-center">
+                    <p className="text-sm font-medium">Nenhuma integração criada</p>
+                    <p className="text-xs mt-1">Crie uma integração para obter um token exclusivo por fonte de leads</p>
+                  </div>
+                  <Button size="sm" onClick={() => { setIntegracaoForm({ nome: '', origem_padrao: '', descricao: '' }); setIntegracaoError(''); setShowIntegracaoModal(true) }}>
+                    <Plus className="h-4 w-4 mr-1" /> Criar primeira integração
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {integracoes.map(integ => (
+                  <Card key={integ.id} className={!integ.ativo ? 'opacity-60' : ''}>
+                    <CardContent className="p-4 space-y-3">
+                      {/* Header da integração */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-sm">{integ.nome}</p>
+                            {integ.origem_padrao && (
+                              <Badge variant="outline" className="text-xs font-normal">
+                                origem: {integ.origem_padrao}
+                              </Badge>
+                            )}
+                            {!integ.ativo && <Badge variant="secondary" className="text-xs">Inativa</Badge>}
+                          </div>
+                          {integ.descricao && <p className="text-xs text-muted-foreground mt-0.5">{integ.descricao}</p>}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {integ.total_leads} lead{integ.total_leads !== 1 ? 's' : ''} recebido{integ.total_leads !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                          onClick={() => setDeletingIntegracao(integ)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+
+                      <Separator />
+
+                      {/* Token */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground font-medium">Token</Label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <code className="block text-xs bg-muted px-3 py-2 rounded-md font-mono truncate">
+                              {visibleTokens.has(integ.id) ? integ.token : '•'.repeat(40)}
+                            </code>
+                            <button type="button"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              onClick={() => toggleTokenVisible(integ.id)}>
+                              {visibleTokens.has(integ.id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
+                            onClick={() => copyToClipboard(integ.token, `token-${integ.id}`)}>
+                            {copied === `token-${integ.id}` ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
+                            onClick={() => handleRegenerateToken(integ.id)} disabled={regeneratingId === integ.id}>
+                            <RefreshCw className={`h-3.5 w-3.5 ${regeneratingId === integ.id ? 'animate-spin' : ''}`} />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Exemplo cURL */}
+                      <details className="group">
+                        <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-1 select-none list-none">
+                          <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+                          Ver exemplo cURL
+                        </summary>
+                        <div className="mt-2 relative">
+                          <pre className="text-[10px] bg-muted rounded-md p-3 overflow-x-auto font-mono leading-relaxed whitespace-pre-wrap break-all">
+                            {buildCurl(integ.token)}
+                          </pre>
+                          <Button variant="ghost" size="sm" className="absolute top-1 right-1 h-6 text-[10px] gap-1"
+                            onClick={() => copyToClipboard(buildCurl(integ.token), `curl-${integ.id}`)}>
+                            {copied === `curl-${integ.id}` ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                          </Button>
+                        </div>
+                      </details>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Modal: criar integração */}
+            <Dialog open={showIntegracaoModal} onOpenChange={open => { if (!open) setShowIntegracaoModal(false) }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Nova Integração</DialogTitle>
+                  <DialogDescription>
+                    Cada integração recebe um token exclusivo. O campo <strong>Origem</strong> é preenchido automaticamente nos leads recebidos.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateIntegracao} className="space-y-4">
+                  {integracaoError && (
+                    <div className="px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">{integracaoError}</div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label>Nome *</Label>
+                    <Input required placeholder="Ex: Meta Lead Ads" value={integracaoForm.nome}
+                      onChange={e => setIntegracaoForm(f => ({ ...f, nome: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Origem automática dos leads</Label>
+                    <Input placeholder="Ex: Meta Ads (padrão: mesmo que o nome)"
+                      value={integracaoForm.origem_padrao}
+                      onChange={e => setIntegracaoForm(f => ({ ...f, origem_padrao: e.target.value }))} />
+                    <p className="text-xs text-muted-foreground">Preenchida automaticamente no campo &quot;origem&quot; de cada lead recebido.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Descrição <span className="text-muted-foreground">(opcional)</span></Label>
+                    <Input placeholder="Ex: Formulário da landing page de inspeção NR-13"
+                      value={integracaoForm.descricao}
+                      onChange={e => setIntegracaoForm(f => ({ ...f, descricao: e.target.value }))} />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setShowIntegracaoModal(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={integracaoLoading}>
+                      {integracaoLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Criar Integração
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Modal: confirmar exclusão */}
+            <Dialog open={!!deletingIntegracao} onOpenChange={open => { if (!open) setDeletingIntegracao(null) }}>
               <DialogContent className="max-w-sm">
                 <DialogHeader>
-                  <DialogTitle>Regenerar Token</DialogTitle>
+                  <DialogTitle>Excluir Integração</DialogTitle>
                   <DialogDescription>
-                    O token atual deixará de funcionar imediatamente. Todas as integrações que o utilizam precisarão ser atualizadas com o novo token. Esta ação não pode ser desfeita.
+                    O token de <strong>{deletingIntegracao?.nome}</strong> será desativado permanentemente. Requisições com esse token passarão a retornar erro 401.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)}>Cancelar</Button>
-                  <Button variant="destructive" onClick={handleRegenerate} disabled={regenerating}>
-                    {regenerating && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                    Regenerar Token
+                  <Button variant="outline" onClick={() => setDeletingIntegracao(null)}>Cancelar</Button>
+                  <Button variant="destructive" onClick={handleDeleteIntegracao} disabled={integracaoLoading}>
+                    {integracaoLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Excluir
                   </Button>
                 </DialogFooter>
               </DialogContent>
