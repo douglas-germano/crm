@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import type { Usuario } from '@/types';
+import { initAmplitude, identifyUser, resetAnalytics, trackEvent } from '@/lib/analytics';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -26,7 +27,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const response = await api.get('/api/usuarios/perfil');
-      setUser(response.data);
+      const u: Usuario = response.data;
+      setUser(u);
+      identifyUser(String(u.id), {
+        nome: u.nome,
+        email: u.email,
+        perfil: u.perfil_id ? String(u.perfil_id) : '',
+        workspace: localStorage.getItem('workspace_nome') ?? '',
+      });
     } catch {
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
@@ -37,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    initAmplitude();
     loadUser();
   }, [loadUser]);
 
@@ -47,6 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('refresh_token', refresh_token);
     localStorage.setItem('workspace_nome', response.data.workspace?.nome_fantasia || workspace);
     setUser(usuario);
+    identifyUser(String(usuario.id), {
+      nome: usuario.nome,
+      email: usuario.email,
+      perfil: usuario.perfil_id ? String(usuario.perfil_id) : '',
+      workspace: response.data.workspace?.nome_fantasia || workspace,
+    });
+    trackEvent('user_logged_in', { workspace: response.data.workspace?.nome_fantasia || workspace });
   };
 
   const logout = async () => {
@@ -55,6 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore
     }
+    trackEvent('user_logged_out');
+    resetAnalytics();
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('workspace_nome');

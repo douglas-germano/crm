@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { trackEvent } from '@/lib/analytics';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { ToastProvider } from '@/contexts/toast-context';
 import Sidebar from '@/components/layout/sidebar';
@@ -34,12 +35,20 @@ export default function AuthenticatedLayout({
 }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.replace('/login');
     }
   }, [loading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (isAuthenticated && pathname) {
+      const page = pathname.split('/').filter(Boolean)[0] ?? 'home';
+      trackEvent('page_viewed', { page, path: pathname });
+    }
+  }, [pathname, isAuthenticated]);
 
   if (loading) {
     return (
