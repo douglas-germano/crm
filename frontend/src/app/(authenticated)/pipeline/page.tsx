@@ -4,7 +4,7 @@ import { useState } from 'react'
 import useSWR from 'swr'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { GripVertical, ChevronRight, ArrowRight, Loader2, Plus, Search, Users } from 'lucide-react'
+import { GripVertical, ChevronRight, ArrowRight, Loader2, Plus, Search, Users, GitBranch } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -213,7 +213,10 @@ export default function PipelinePage() {
     <div className="space-y-4 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
-        <h2 className="text-xl font-semibold">Pipeline</h2>
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">Pipeline</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Visualize e mova leads pelo funil de vendas</p>
+        </div>
         <div className="flex items-center gap-2">
           {activePipelineId && (
             <Button onClick={openAddModal} size="sm">
@@ -252,8 +255,12 @@ export default function PipelinePage() {
         </div>
       ) : leadsPorEstagio.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
+          <GitBranch className="h-10 w-10 mx-auto mb-4 opacity-20" />
           <p className="font-medium">Nenhum pipeline configurado</p>
-          <p className="text-sm mt-1">Selecione ou crie um pipeline para visualizar o board</p>
+          <p className="text-sm mt-1">Crie um pipeline e defina os estágios para começar</p>
+          <Button size="sm" variant="outline" className="mt-4" onClick={() => window.location.href = '/perfil'}>
+            Configurar pipeline
+          </Button>
         </Card>
       ) : (
         <div className="flex-1 overflow-x-scroll pb-4">

@@ -26,6 +26,8 @@ import {
 
 const fetcher = (url: string) => api.get(url).then(r => r.data)
 
+const PER_PAGE = 9
+
 const STATUS_LABELS: Record<string, string> = {
   planejamento: 'Planejamento',
   em_andamento: 'Em Andamento',
@@ -102,6 +104,7 @@ export default function ProjetosPage() {
   const router = useRouter()
   const [statusFilter, setStatusFilter] = useState('')
   const [busca, setBusca] = useState('')
+  const [page, setPage] = useState(1)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -170,6 +173,9 @@ export default function ProjetosPage() {
   }
 
   const projetosList: Projeto[] = Array.isArray(projetos) ? projetos : []
+  const totalPages = Math.max(1, Math.ceil(projetosList.length / PER_PAGE))
+  const currentPage = Math.min(page, totalPages)
+  const paginated = projetosList.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE)
 
   const formatDate = (d: string | null) => {
     if (!d) return '—'
@@ -199,11 +205,11 @@ export default function ProjetosPage() {
           <Input
             placeholder="Buscar projetos..."
             value={busca}
-            onChange={e => setBusca(e.target.value)}
+            onChange={e => { setBusca(e.target.value); setPage(1) }}
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter || 'all'} onValueChange={v => setStatusFilter(v === 'all' ? '' : v)}>
+        <Select value={statusFilter || 'all'} onValueChange={v => { setStatusFilter(v === 'all' ? '' : v); setPage(1) }}>
           <SelectTrigger className="w-[180px]">
             <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
             <SelectValue placeholder="Todos os status" />
@@ -224,15 +230,22 @@ export default function ProjetosPage() {
         </div>
       ) : projetosList.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <FolderKanban className="h-12 w-12 mb-4 opacity-30" />
-            <p className="text-sm font-medium">Nenhum projeto encontrado</p>
-            <p className="text-xs mt-1">Crie seu primeiro projeto para começar</p>
+          <CardContent className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+            <FolderKanban className="h-12 w-12 opacity-20" />
+            <div className="text-center">
+              <p className="text-sm font-medium">Nenhum projeto encontrado</p>
+              <p className="text-xs mt-1">{busca || statusFilter ? 'Tente ajustar os filtros' : 'Crie seu primeiro projeto para começar'}</p>
+            </div>
+            {!busca && !statusFilter && (
+              <Button size="sm" onClick={() => { setForm({ ...EMPTY_FORM }); setApiError(''); setShowCreateModal(true) }}>
+                <Plus className="h-4 w-4 mr-1" /> Criar primeiro projeto
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {projetosList.map((projeto) => (
+          {paginated.map((projeto) => (
             <Card
               key={projeto.id}
               className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-brand-300"
@@ -312,8 +325,8 @@ export default function ProjetosPage() {
                   </div>
                 )}
 
-                {/* Actions (on hover) */}
-                <div className="mt-3 pt-3 border-t border-steel-100 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Actions */}
+                <div className="mt-3 pt-3 border-t border-steel-100 flex justify-end gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -331,6 +344,23 @@ export default function ProjetosPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Página {currentPage} de {totalPages} ({projetosList.length} projetos)
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+              Anterior
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+              Próximo
+            </Button>
+          </div>
         </div>
       )}
 

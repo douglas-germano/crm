@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ShieldCheck, ShieldAlert, FileText, Download, Building, Cpu, Calendar, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, FileText, Download, Building, Cpu, Calendar, CheckCircle2, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function PortalClientePage() {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -106,6 +106,14 @@ export default function PortalClientePage() {
   const percentualSaude = totalAtivos > 0 ? Math.round((ativosConformes / totalAtivos) * 100) : 100;
   const proximasInspecoes = inspecoes.filter(i => i.status === 'agendada').length;
 
+  if (loading && ativos.length === 0 && inspecoes.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full py-32">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-8 p-6 pb-12">
       {/* HEADER E SELETOR DE EMPRESA */}
@@ -136,6 +144,14 @@ export default function PortalClientePage() {
           </Select>
         </div>
       </div>
+
+      {/* Loading overlay ao trocar empresa */}
+      {loading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Carregando dados da empresa...
+        </div>
+      )}
 
       {/* COMPLIANCE HEALTH CARDS */}
       <div className="grid gap-6 md:grid-cols-4">

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import api from '@/lib/api'
 import { formatDate, statusColor } from '@/lib/utils'
-import { Plus, Search, Trash2, Loader2, Pencil, CheckCircle2 } from 'lucide-react'
+import { Plus, Search, Trash2, Loader2, Pencil, CheckCircle2, Users } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -198,7 +198,10 @@ export default function LeadsPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold tracking-tight">Leads</h2>
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">Leads</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Gerencie e qualifique seus leads de vendas</p>
+        </div>
         <Button onClick={openCreateModal}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Lead
@@ -237,8 +240,17 @@ export default function LeadsPage() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : leads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-              <p className="text-sm">Nenhum lead encontrado</p>
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+              <Users className="h-10 w-10 opacity-20" />
+              <div className="text-center">
+                <p className="text-sm font-medium">Nenhum lead encontrado</p>
+                <p className="text-xs mt-1">{search || status ? 'Tente ajustar os filtros' : 'Comece cadastrando seu primeiro lead'}</p>
+              </div>
+              {!search && !status && (
+                <Button size="sm" onClick={openCreateModal}>
+                  <Plus className="h-4 w-4 mr-1" /> Criar primeiro lead
+                </Button>
+              )}
             </div>
           ) : (
             <Table>
@@ -273,7 +285,7 @@ export default function LeadsPage() {
                     <TableCell>{lead.responsavel ?? '-'}</TableCell>
                     <TableCell>{formatDate(lead.data_criacao)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
