@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import BottomNav from '@/components/mobile/bottom-nav';
+import { useMobileToDesktopRedirect } from '@/hooks/use-device-redirect';
 
 const TITLES: Record<string, string> = {
   '/m/dashboard': 'Dashboard',
@@ -17,6 +18,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
   const { isAuthenticated, loading, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  useMobileToDesktopRedirect();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {

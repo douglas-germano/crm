@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { trackEvent } from '@/lib/analytics';
+import { useDesktopToMobileRedirect } from '@/hooks/use-device-redirect';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { ToastProvider } from '@/contexts/toast-context';
 import Sidebar from '@/components/layout/sidebar';
@@ -36,6 +37,7 @@ export default function AuthenticatedLayout({
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  useDesktopToMobileRedirect();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
