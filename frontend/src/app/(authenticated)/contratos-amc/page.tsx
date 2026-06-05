@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import useSWR from 'swr';
 import api from '@/lib/api';
 import { ContratoAMC, Empresa } from '@/types';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { useToast } from '@/contexts/toast-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -171,50 +171,55 @@ export default function ContratosAmcPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-brand-900 text-white relative overflow-hidden">
-          <div className="absolute right-0 bottom-0 opacity-10 translate-x-1/4 translate-y-1/4">
-            <CircleDollarSign className="h-40 w-40" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="text-steel-400 text-xs uppercase tracking-wider font-semibold">
-              MRR — Receita Mensal Recorrente
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold text-green-400 font-mono tabular-nums">
+        <Card className="bg-white transition-colors hover:border-gray-300">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <CircleDollarSign className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground leading-none">
+                MRR — Receita Mensal Recorrente
+              </p>
+            </div>
+            <p className="text-[1.875rem] font-semibold text-foreground tabular-nums tracking-tight leading-none">
               {formatCurrency(mrr)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-steel-400">
-            Calculado proporcionalmente ao mês de todos os contratos ativos.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Calculado proporcionalmente ao plano de cada contrato ativo
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-              Contratos Ativos
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold flex items-center gap-2">
-              <Handshake className="h-6 w-6 text-blue-500" />
+        <Card className="bg-white">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Handshake className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground leading-none">
+                Contratos Ativos
+              </p>
+            </div>
+            <p className="text-[1.875rem] font-semibold text-foreground tabular-nums tracking-tight leading-none">
               {totalAtivos}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">
-            Acordos vigentes em execução.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">Acordos vigentes em execução</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-              Contratos Suspensos
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold flex items-center gap-2">
-              <AlertCircle className="h-6 w-6 text-amber-500" />
+        <Card className="bg-white">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertCircle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground leading-none">
+                Contratos Suspensos
+              </p>
+            </div>
+            <p className={cn(
+              'text-[1.875rem] font-semibold tabular-nums tracking-tight leading-none',
+              totalSuspensos > 0 ? 'text-amber-600' : 'text-foreground'
+            )}>
               {totalSuspensos}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">
-            Contratos com pendência ou suspensos temporariamente.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Contratos com pendência ou suspensos temporariamente
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -251,8 +256,7 @@ export default function ContratosAmcPage() {
       {/* Table */}
       <Card>
         <CardHeader className="pb-3 border-b">
-          <CardTitle className="text-base flex items-center gap-2">
-            <RefreshCw className="h-4 w-4 text-blue-500" />
+          <CardTitle className="text-base font-semibold text-foreground">
             Contratos Cadastrados
           </CardTitle>
         </CardHeader>
