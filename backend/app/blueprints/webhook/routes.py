@@ -143,8 +143,13 @@ def receber_lead():
 
     db.session.commit()
 
+    # Confirmar schema ativo após commit
+    result = db.session.execute(text('SHOW search_path')).fetchone()
+    schema_ativo = result[0] if result else 'desconhecido'
+
     current_app.logger.info(
         f'Webhook lead criado: tenant={tenant.db_schema} '
+        f'schema_ativo={schema_ativo} '
         f'integracao={integracao.nome if integracao else "global"} '
         f'lead_id={lead.id} email={email}'
     )
@@ -153,6 +158,8 @@ def receber_lead():
         'mensagem': 'Lead recebido com sucesso.',
         'lead_id': lead.id,
         'lead_uuid': lead.uuid,
+        '_debug_schema': schema_ativo,
+        '_debug_tenant': tenant.db_schema,
     }), 201
 
 
