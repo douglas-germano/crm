@@ -19,7 +19,6 @@ import { cn, formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Users,
@@ -55,6 +54,8 @@ const COLORS = {
   blue: '#3860be',
 };
 
+const CHART_COLORS = ['#3860be', '#22c55e', '#ac1811', '#e60000', '#7e7e7e', '#f59e0b'];
+
 // ---- Calendar constants ----
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const MONTHS = [
@@ -82,21 +83,24 @@ const STATUS_DOT: Record<string, string> = {
 
 // ---- Relatorios sub-components (shared) ----
 
-function KPICard({ label, value, sub, trend, color = '#3860be' }: {
+function KPICard({ label, value, sub, trend, color }: {
   label: string; value: string | number; sub?: string;
   trend?: 'up' | 'down' | 'neutral'; color?: string;
 }) {
   return (
     <Card>
       <CardContent className="p-5">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">{label}</p>
-        <p className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">{label}</p>
+        <p className="text-2xl font-semibold tabular-nums text-foreground">{value}</p>
         {sub && (
-          <div className="flex items-center gap-1 mt-2">
-            {trend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
-            {trend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
+          <div className="flex items-center gap-1.5 mt-2">
+            {trend === 'up' && <TrendingUp className="h-3 w-3 text-green-500 shrink-0" />}
+            {trend === 'down' && <TrendingDown className="h-3 w-3 text-red-500 shrink-0" />}
             <p className="text-xs text-muted-foreground">{sub}</p>
           </div>
+        )}
+        {color && (
+          <div className="mt-3 h-0.5 w-8 rounded-full" style={{ backgroundColor: color }} />
         )}
       </CardContent>
     </Card>
@@ -170,42 +174,31 @@ function CustomTooltip({
 function StatCard({
   label,
   value,
-  accentColor,
   icon: Icon,
   href,
 }: {
   label: string;
   value: string | number;
-  accentColor: string;
   icon: LucideIcon;
   href?: string;
 }) {
   const inner = (
-    <Card className="relative overflow-hidden group hover:[box-shadow:var(--card-shadow-hover)] transition-shadow">
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-200 group-hover:w-1.5"
-        style={{ backgroundColor: accentColor }}
-      />
-      <CardContent className="p-4 pl-5">
-        <div className="flex items-start justify-between mb-2">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-            {label}
-          </p>
-          <div
-            className="flex items-center justify-center w-7 h-7 rounded-md opacity-80"
-            style={{ backgroundColor: accentColor + '18' }}
-          >
-            <Icon className="w-3.5 h-3.5" style={{ color: accentColor }} />
+    <Card className="group transition-colors hover:border-gray-300 bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground leading-none">
+              {label}
+            </p>
           </div>
+          {href && (
+            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />
+          )}
         </div>
-        <p className="text-2xl font-display font-semibold text-foreground tabular-nums">
+        <p className="text-[1.875rem] font-semibold text-foreground tabular-nums tracking-tight leading-none">
           {value}
         </p>
-        {href && (
-          <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-0.5 group-hover:text-primary transition-colors">
-            Ver detalhes <ArrowRight className="h-2.5 w-2.5" />
-          </p>
-        )}
       </CardContent>
     </Card>
   );
@@ -374,28 +367,24 @@ export default function DashboardPage() {
               <StatCard
                 label="Total Leads"
                 value={stats?.total_leads ?? 0}
-                accentColor={COLORS.blue}
                 icon={Users}
                 href="/leads"
               />
               <StatCard
                 label="Empresas"
                 value={stats?.total_empresas ?? 0}
-                accentColor={COLORS.steel}
                 icon={Building2}
                 href="/empresas"
               />
               <StatCard
                 label="Negócios Abertos"
                 value={stats ? formatCurrency(stats.valor_aberto) : 'R$ 0,00'}
-                accentColor={COLORS.orange}
                 icon={Wallet}
                 href="/negocios"
               />
               <StatCard
                 label="Receita Ganha"
                 value={stats ? formatCurrency(stats.valor_ganho) : 'R$ 0,00'}
-                accentColor={COLORS.green}
                 icon={TrendingUp}
                 href="/relatorios"
               />
@@ -584,39 +573,30 @@ export default function DashboardPage() {
                     Taxa de Conversão
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 pt-0 flex-1 min-h-0 flex flex-col items-center justify-center">
-                  <p className="text-5xl font-display font-bold tabular-nums" style={{ color: COLORS.orange }}>
-                    {taxaConversao.toFixed(1)}%
-                  </p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mt-2">
-                    taxa de conversao
-                  </p>
-                  <Separator className="my-4 w-16" />
-                  <div className="grid grid-cols-3 gap-4 text-center w-full">
-                    <div>
-                      <p className="text-lg font-display font-semibold tabular-nums text-foreground">
-                        {stats?.total_abertos ?? 0}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                        Abertos
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-display font-semibold tabular-nums text-green-500">
-                        {stats?.total_ganhos ?? 0}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                        Ganhos
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-display font-semibold tabular-nums text-red-500">
-                        {stats?.total_perdidos ?? 0}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                        Perdidos
-                      </p>
-                    </div>
+                <CardContent className="p-4 pt-0 flex-1 min-h-0 flex flex-col justify-center gap-5">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                      Conversão
+                    </p>
+                    <p className="text-4xl font-semibold tabular-nums tracking-tight text-foreground">
+                      {taxaConversao.toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="space-y-2.5">
+                    {[
+                      { label: 'Abertos', value: stats?.total_abertos ?? 0 },
+                      { label: 'Ganhos', value: stats?.total_ganhos ?? 0, dot: COLORS.green },
+                      { label: 'Perdidos', value: stats?.total_perdidos ?? 0, dot: COLORS.red },
+                    ].map(({ label, value, dot }) => (
+                      <div key={label} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          {dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
+                          {!dot && <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-gray-300" />}
+                          <span className="text-muted-foreground text-xs">{label}</span>
+                        </div>
+                        <span className="font-semibold tabular-nums text-foreground text-sm">{value}</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -805,7 +785,6 @@ export default function DashboardPage() {
       {/* ===== RELATÓRIOS TAB ===== */}
       <TabsContent value="relatorios">
         {(() => {
-          const relColors = ['#3860be', '#22c55e', '#ac1811', '#e60000', '#7e7e7e', '#f59e0b'];
           const statusPieData = stats ? [
             { name: 'Abertos', value: stats.total_abertos, color: '#3860be' },
             { name: 'Ganhos', value: stats.total_ganhos, color: '#22c55e' },
@@ -852,7 +831,7 @@ export default function DashboardPage() {
                             <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#8e9baa' }} axisLine={false} tickLine={false} />
                             <Tooltip content={<ChartTooltipRel />} />
                             <Bar dataKey="total" radius={[4, 4, 0, 0]} barSize={28}>
-                              {funil.funil.map((e, i) => <Cell key={i} fill={e.cor || relColors[i % relColors.length]} />)}
+                              {funil.funil.map((e, i) => <Cell key={i} fill={e.cor || CHART_COLORS[i % CHART_COLORS.length]} />)}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
@@ -957,7 +936,7 @@ export default function DashboardPage() {
                               <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#8e9baa' }} axisLine={false} tickLine={false} />
                               <Tooltip content={<ChartTooltipRel />} />
                               <Bar dataKey="total" radius={[4, 4, 0, 0]} barSize={28}>
-                                {projPorStatus.map((_, i) => <Cell key={i} fill={relColors[i % relColors.length]} />)}
+                                {projPorStatus.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                               </Bar>
                             </BarChart>
                           </ResponsiveContainer>
@@ -979,8 +958,8 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card>
                     <CardContent className="p-5">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-3">Pipeline Total</p>
-                      <p className="text-2xl font-bold tabular-nums">{formatCurrency(stats?.valor_total ?? 0)}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Pipeline Total</p>
+                      <p className="text-2xl font-semibold tabular-nums text-foreground tracking-tight">{formatCurrency(stats?.valor_total ?? 0)}</p>
                       <div className="mt-4 space-y-2">
                         {[
                           { label: 'Aberto', value: stats?.valor_aberto ?? 0, color: '#3860be' },
@@ -1000,22 +979,22 @@ export default function DashboardPage() {
                   </Card>
                   <Card className="md:col-span-2">
                     <CardContent className="p-5">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-3">Indicadores de Eficiência</p>
-                      <div className="grid grid-cols-2 gap-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4">Indicadores de Eficiência</p>
+                      <div className="divide-y">
                         {[
-                          { label: 'Taxa de Conversão', value: `${taxaRel.toFixed(1)}%`, good: taxaRel >= 30 },
-                          { label: 'Ticket Médio', value: formatCurrency(ticketMedio), good: ticketMedio > 0 },
-                          { label: 'Leads vs Ganhos', value: `${stats?.total_ganhos ?? 0} / ${stats?.total_leads ?? 0}`, good: true },
-                          { label: 'Negócios Perdidos', value: stats?.total_perdidos ?? 0, good: (stats?.total_perdidos ?? 0) === 0 },
+                          { label: 'Taxa de Conversão', value: `${taxaRel.toFixed(1)}%`, alert: taxaRel < 30 },
+                          { label: 'Ticket Médio (Ganhos)', value: formatCurrency(ticketMedio) },
+                          { label: 'Leads vs Negócios Ganhos', value: `${stats?.total_ganhos ?? 0} de ${stats?.total_leads ?? 0}` },
+                          { label: 'Negócios Perdidos', value: stats?.total_perdidos ?? 0, alert: (stats?.total_perdidos ?? 0) > 0 },
                         ].map(item => (
-                          <div key={item.label} className="flex items-start justify-between p-3 bg-muted/30 rounded-lg">
-                            <div>
-                              <p className="text-xs text-muted-foreground">{item.label}</p>
-                              <p className="text-lg font-bold tabular-nums mt-0.5">{item.value}</p>
-                            </div>
-                            <Badge variant="outline" className={item.good ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}>
-                              {item.good ? 'OK' : 'Atenção'}
-                            </Badge>
+                          <div key={item.label} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                            <span className="text-sm text-muted-foreground">{item.label}</span>
+                            <span className={cn(
+                              'text-sm font-semibold tabular-nums',
+                              item.alert ? 'text-red-600' : 'text-foreground'
+                            )}>
+                              {item.value}
+                            </span>
                           </div>
                         ))}
                       </div>
