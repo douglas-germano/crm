@@ -7,21 +7,26 @@ import { useAuth } from '@/contexts/auth-context'
 import { cn, getInitials, formatDate } from '@/lib/utils'
 import {
   Loader2, Check, Lock, AlertTriangle, Eye, EyeOff,
-  ShieldCheck, GlobeLock, Mail, KeySquare, AlertCircle,
-  User, Settings2, Users, Plus,
+  User, Settings2, Users, Plus, GitBranch, Pencil, Trash2,
+  ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+
+const STAGE_COLORS = [
+  '#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6',
+  '#1abc9c', '#e67e22', '#27ae60', '#c0392b', '#8e44ad',
+  '#2980b9', '#16a085', '#d35400', '#7f8c8d', '#2c3e50',
+]
 
 const fetcher = (url: string) => api.get(url).then(r => r.data)
 
@@ -46,16 +51,30 @@ export default function PerfilPage() {
   const [showConfirmarSenha, setShowConfirmarSenha] = useState(false)
   const [senhaForm, setSenhaForm] = useState({ senha_atual: '', nova_senha: '', confirmar_senha: '' })
 
-  // ── Configurações (admin) ───────────────────────────────────────────────────
-  const [allowRegistration, setAllowRegistration] = useState(true)
-  const [maintenanceMode, setMaintenanceMode] = useState(false)
-  const [require2FA, setRequire2FA] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [invalidatingJwt, setInvalidatingJwt] = useState(false)
-  const [jwtDone, setJwtDone] = useState(false)
-  const [testingGateway, setTestingGateway] = useState(false)
-  const [gatewayResult, setGatewayResult] = useState<'ok' | 'error' | null>(null)
+  // ── Pipeline (admin) ────────────────────────────────────────────────────────
+  interface PipelineItem { id: number; nome: string; descricao: string; ativo: boolean; estagios: EstagioItem[] }
+  interface EstagioItem { id: number; nome: string; cor: string; ordem: number; descricao?: string }
+
+  const [expandedPipeline, setExpandedPipeline] = useState<number | null>(null)
+  // Pipeline modal
+  const [showPipelineModal, setShowPipelineModal] = useState(false)
+  const [editingPipeline, setEditingPipeline] = useState<PipelineItem | null>(null)
+  const [pipelineForm, setPipelineForm] = useState({ nome: '', descricao: '' })
+  const [pipelineLoading, setPipelineLoading] = useState(false)
+  const [pipelineError, setPipelineError] = useState('')
+  // Delete pipeline
+  const [deletingPipeline, setDeletingPipeline] = useState<PipelineItem | null>(null)
+  const [showDeletePipelineModal, setShowDeletePipelineModal] = useState(false)
+  // Stage modal
+  const [showEstagioModal, setShowEstagioModal] = useState(false)
+  const [editingEstagio, setEditingEstagio] = useState<EstagioItem | null>(null)
+  const [estagioTargetPipelineId, setEstagioTargetPipelineId] = useState<number | null>(null)
+  const [estagioForm, setEstagioForm] = useState({ nome: '', cor: '#3498db', descricao: '' })
+  const [estagioLoading, setEstagioLoading] = useState(false)
+  const [estagioError, setEstagioError] = useState('')
+  // Delete stage
+  const [deletingEstagio, setDeletingEstagio] = useState<EstagioItem | null>(null)
+  const [showDeleteEstagioModal, setShowDeleteEstagioModal] = useState(false)
 
   const isAdmin = user?.perfil
     ? (typeof user.perfil === 'string' ? user.perfil : user.perfil.nome) === 'Administrador'
@@ -76,6 +95,102 @@ export default function PerfilPage() {
   interface PerfilItem { id: number; nome: string }
   const usuarios: UsuarioItem[] = usuariosData?.usuarios ?? []
   const perfis: PerfilItem[] = perfisData?.perfis ?? []
+
+  const { data: pipelinesData, mutate: mutatePipelines, isLoading: pipelinesLoading } = useSWR(
+    isAdmin ? '/api/pipelines' : null, fetcher
+  )
+  const pipelines: PipelineItem[] = pipelinesData?.pipelines ?? []
+
+  // ── Pipeline handlers ───────────────────────────────────────────────────────
+  const openCreatePipeline = () => {
+    setEditingPipeline(null)
+    setPipelineForm({ nome: '', descricao: '' })
+    setPipelineError('')
+    setShowPipelineModal(true)
+  }
+  const openEditPipeline = (p: PipelineItem) => {
+    setEditingPipeline(p)
+    setPipelineForm({ nome: p.nome, descricao: p.descricao ?? '' })
+    setPipelineError('')
+    setShowPipelineModal(true)
+  }
+  const handleSavePipeline = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pipelineForm.nome.trim()) { setPipelineError('Nome é obrigatório'); return }
+    setPipelineLoading(true); setPipelineError('')
+    try {
+      if (editingPipeline) {
+        await api.put(`/api/pipelines/${editingPipeline.id}`, pipelineForm)
+      } else {
+        await api.post('/api/pipelines', { ...pipelineForm, criar_estagios_padrao: false })
+      }
+      setShowPipelineModal(false)
+      mutatePipelines()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string } } }
+      setPipelineError(error.response?.data?.erro || 'Erro ao salvar pipeline')
+    } finally { setPipelineLoading(false) }
+  }
+  const handleDeletePipeline = async () => {
+    if (!deletingPipeline) return
+    setPipelineLoading(true)
+    try {
+      await api.delete(`/api/pipelines/${deletingPipeline.id}`)
+      setShowDeletePipelineModal(false)
+      setDeletingPipeline(null)
+      if (expandedPipeline === deletingPipeline.id) setExpandedPipeline(null)
+      mutatePipelines()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string } } }
+      setPipelineError(error.response?.data?.erro || 'Erro ao excluir pipeline')
+    } finally { setPipelineLoading(false) }
+  }
+
+  // ── Stage handlers ──────────────────────────────────────────────────────────
+  const openCreateEstagio = (pipelineId: number) => {
+    setEditingEstagio(null)
+    setEstagioTargetPipelineId(pipelineId)
+    setEstagioForm({ nome: '', cor: '#3498db', descricao: '' })
+    setEstagioError('')
+    setShowEstagioModal(true)
+  }
+  const openEditEstagio = (e: EstagioItem, pipelineId: number) => {
+    setEditingEstagio(e)
+    setEstagioTargetPipelineId(pipelineId)
+    setEstagioForm({ nome: e.nome, cor: e.cor, descricao: e.descricao ?? '' })
+    setEstagioError('')
+    setShowEstagioModal(true)
+  }
+  const handleSaveEstagio = async (ev: React.FormEvent) => {
+    ev.preventDefault()
+    if (!estagioForm.nome.trim()) { setEstagioError('Nome é obrigatório'); return }
+    setEstagioLoading(true); setEstagioError('')
+    try {
+      if (editingEstagio) {
+        await api.put(`/api/pipelines/estagios/${editingEstagio.id}`, estagioForm)
+      } else {
+        await api.post(`/api/pipelines/${estagioTargetPipelineId}/estagios`, estagioForm)
+      }
+      setShowEstagioModal(false)
+      mutatePipelines()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string } } }
+      setEstagioError(error.response?.data?.erro || 'Erro ao salvar estágio')
+    } finally { setEstagioLoading(false) }
+  }
+  const handleDeleteEstagio = async () => {
+    if (!deletingEstagio) return
+    setEstagioLoading(true)
+    try {
+      await api.delete(`/api/pipelines/estagios/${deletingEstagio.id}`)
+      setShowDeleteEstagioModal(false)
+      setDeletingEstagio(null)
+      mutatePipelines()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { erro?: string } } }
+      setEstagioError(error.response?.data?.erro || 'Erro ao excluir estágio')
+    } finally { setEstagioLoading(false) }
+  }
 
   const handleCreateUsuario = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -169,34 +284,6 @@ export default function PerfilPage() {
     }
   }
 
-  // ── Handlers configurações ──────────────────────────────────────────────────
-  const handleSaveConfig = async () => {
-    setSaving(true)
-    setSaved(false)
-    await new Promise(r => setTimeout(r, 800))
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
-  }
-
-  const handleInvalidateJwts = async () => {
-    setInvalidatingJwt(true)
-    setJwtDone(false)
-    await new Promise(r => setTimeout(r, 1000))
-    setInvalidatingJwt(false)
-    setJwtDone(true)
-    setTimeout(() => setJwtDone(false), 3000)
-  }
-
-  const handleTestGateway = async () => {
-    setTestingGateway(true)
-    setGatewayResult(null)
-    await new Promise(r => setTimeout(r, 1200))
-    setTestingGateway(false)
-    setGatewayResult('ok')
-    setTimeout(() => setGatewayResult(null), 4000)
-  }
-
   const initials = user?.nome ? getInitials(user.nome) : '?'
 
   return (
@@ -250,8 +337,8 @@ export default function PerfilPage() {
           )}
           {isAdmin && (
             <TabsTrigger value="configuracoes" className="gap-2">
-              <Settings2 className="h-4 w-4" />
-              Configurações
+              <GitBranch className="h-4 w-4" />
+              Pipeline
             </TabsTrigger>
           )}
         </TabsList>
@@ -492,159 +579,234 @@ export default function PerfilPage() {
           </TabsContent>
         )}
 
-        {/* ── Tab Configurações (admin only) ── */}
+        {/* ── Tab Pipeline (admin only) ── */}
         {isAdmin && (
-          <TabsContent value="configuracoes" className="mt-4 space-y-5">
-            <div className="grid gap-5 md:grid-cols-2">
-
-              {/* Acesso e Segurança */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-brand-500" />
-                    Acesso e Segurança Global
-                  </CardTitle>
-                  <CardDescription>Controle quem pode entrar na plataforma e qual protocolo exigir.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-0.5 flex-1">
-                      <Label className="text-sm font-medium">Inscrições Abertas</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Se desativado, esconde a página <code className="text-xs">/registro</code> para visitantes externos.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={allowRegistration}
-                      onCheckedChange={setAllowRegistration}
-                      className="data-[state=checked]:bg-brand-500 shrink-0"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-4 pt-4 border-t">
-                    <div className="space-y-0.5 flex-1">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium">Forçar Autenticação 2FA</Label>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Em breve</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Todos os administradores serão obrigados a usar 2FA no login.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={require2FA}
-                      onCheckedChange={setRequire2FA}
-                      disabled
-                      className="data-[state=checked]:bg-brand-500 shrink-0"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Protocolos de Emergência */}
-              <Card className="border-destructive/20">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2 text-destructive">
-                    <GlobeLock className="w-4 h-4" />
-                    Protocolos de Emergência
-                  </CardTitle>
-                  <CardDescription>Ações que afetam sessões e conexões de todos os clientes.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-0.5 flex-1">
-                      <Label className="text-sm font-medium">Modo Manutenção (503)</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Coloca todo o sistema em lockdown com mensagem de manutenção.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={maintenanceMode}
-                      onCheckedChange={setMaintenanceMode}
-                      className="data-[state=checked]:bg-destructive shrink-0"
-                    />
-                  </div>
-                  <div className="pt-4 border-t">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="w-full font-semibold"
-                      onClick={handleInvalidateJwts}
-                      disabled={invalidatingJwt || jwtDone}
-                    >
-                      {invalidatingJwt ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : jwtDone ? <Check className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
-                      {jwtDone ? 'JWTs invalidados!' : 'Invalidar JWTs Ativos'}
-                    </Button>
-                    {jwtDone && (
-                      <p className="text-xs text-muted-foreground text-center mt-2">
-                        Todos os tokens foram revogados. Usuários precisarão fazer login novamente.
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* E-mail & Mensageria */}
-              <Card className="md:col-span-2">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-accent-500" />
-                    Motores de E-mail & Mensageria
-                  </CardTitle>
-                  <CardDescription>Apontamentos DNS e chaves atreladas ao Brevo API.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-3">
-                  <div className="bg-muted/40 p-4 rounded-lg border space-y-1.5">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Provedor</span>
-                    <p className="text-sm font-semibold flex gap-2 items-center">
-                      <KeySquare className="w-4 h-4 text-emerald-500" />
-                      Brevo Transactional
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">Ativo</Badge>
-                    </p>
-                  </div>
-                  <div className="bg-muted/40 p-4 rounded-lg border space-y-2">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Cota Mensal</span>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 flex-1 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-accent-500 w-[12%] rounded-full" />
-                      </div>
-                      <span className="text-xs text-muted-foreground font-mono tabular-nums">12%</span>
-                    </div>
-                  </div>
-                  <div className="bg-muted/40 p-4 rounded-lg border flex flex-col justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={handleTestGateway}
-                      disabled={testingGateway}
-                    >
-                      {testingGateway ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : gatewayResult === 'ok' ? <Check className="w-4 h-4 mr-2 text-emerald-600" /> : gatewayResult === 'error' ? <AlertCircle className="w-4 h-4 mr-2 text-destructive" /> : null}
-                      {gatewayResult === 'ok' ? 'Gateway OK' : 'Testar Gateway'}
-                    </Button>
-                    {gatewayResult === 'error' && (
-                      <p className="text-xs text-destructive text-center">Falha na conexão com o Brevo.</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Salvar configurações */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t">
-              {saved && (
-                <span className="text-sm text-emerald-600 flex items-center gap-1.5">
-                  <Check className="w-4 h-4" /> Configurações salvas.
-                </span>
-              )}
-              <Button
-                onClick={handleSaveConfig}
-                disabled={saving || saved}
-                className="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6"
-              >
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : saved ? <Check className="w-4 h-4 mr-2" /> : null}
-                {saved ? 'Salvo!' : 'Salvar Modificações'}
+          <TabsContent value="configuracoes" className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Gerencie os pipelines e seus estágios de venda.</p>
+              <Button size="sm" onClick={openCreatePipeline}>
+                <Plus className="h-4 w-4 mr-1" /> Novo Pipeline
               </Button>
             </div>
+
+            {pipelinesLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : pipelines.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+                  <GitBranch className="h-10 w-10 opacity-20" />
+                  <div className="text-center">
+                    <p className="text-sm font-medium">Nenhum pipeline criado</p>
+                    <p className="text-xs mt-1">Crie um pipeline para organizar seus leads por etapa de venda</p>
+                  </div>
+                  <Button size="sm" onClick={openCreatePipeline}>
+                    <Plus className="h-4 w-4 mr-1" /> Criar primeiro pipeline
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {pipelines.map(pipeline => (
+                  <Card key={pipeline.id} className="overflow-hidden">
+                    {/* Pipeline header */}
+                    <div
+                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+                      onClick={() => setExpandedPipeline(expandedPipeline === pipeline.id ? null : pipeline.id)}
+                    >
+                      <button className="text-muted-foreground">
+                        {expandedPipeline === pipeline.id
+                          ? <ChevronDown className="h-4 w-4" />
+                          : <ChevronRight className="h-4 w-4" />}
+                      </button>
+                      <GitBranch className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold">{pipeline.nome}</p>
+                        {pipeline.descricao && (
+                          <p className="text-xs text-muted-foreground truncate">{pipeline.descricao}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="outline" className="text-xs">
+                          {pipeline.estagios.length} estágio{pipeline.estagios.length !== 1 ? 's' : ''}
+                        </Badge>
+                        <Button variant="ghost" size="icon" className="h-7 w-7"
+                          onClick={e => { e.stopPropagation(); openEditPipeline(pipeline) }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={e => { e.stopPropagation(); setDeletingPipeline(pipeline); setShowDeletePipelineModal(true) }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Expanded stages */}
+                    {expandedPipeline === pipeline.id && (
+                      <>
+                        <Separator />
+                        <div className="p-4 space-y-2">
+                          {pipeline.estagios.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-4">Nenhum estágio. Adicione o primeiro abaixo.</p>
+                          ) : (
+                            pipeline.estagios
+                              .sort((a, b) => a.ordem - b.ordem)
+                              .map(estagio => (
+                                <div key={estagio.id} className="flex items-center gap-3 px-3 py-2 rounded-md border bg-muted/20 group">
+                                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: estagio.cor }} />
+                                  <span className="text-xs text-muted-foreground w-5 tabular-nums">{estagio.ordem}.</span>
+                                  <span className="text-sm font-medium flex-1">{estagio.nome}</span>
+                                  {estagio.descricao && (
+                                    <span className="text-xs text-muted-foreground truncate max-w-[200px] hidden md:block">{estagio.descricao}</span>
+                                  )}
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6"
+                                      onClick={() => openEditEstagio(estagio, pipeline.id)}>
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"
+                                      onClick={() => { setDeletingEstagio(estagio); setShowDeleteEstagioModal(true) }}>
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))
+                          )}
+                          <Button variant="outline" size="sm" className="w-full mt-2 text-xs"
+                            onClick={() => openCreateEstagio(pipeline.id)}>
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar estágio
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Modal: criar/editar pipeline */}
+            <Dialog open={showPipelineModal} onOpenChange={open => { if (!open) setShowPipelineModal(false) }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{editingPipeline ? 'Editar Pipeline' : 'Novo Pipeline'}</DialogTitle>
+                  <DialogDescription>
+                    {editingPipeline ? 'Atualize o nome e descrição do pipeline.' : 'Crie um funil de vendas para organizar seus leads.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSavePipeline} className="space-y-4">
+                  {pipelineError && (
+                    <div className="px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">{pipelineError}</div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label>Nome *</Label>
+                    <Input required value={pipelineForm.nome} onChange={e => setPipelineForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Funil Comercial" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Descrição</Label>
+                    <Input value={pipelineForm.descricao} onChange={e => setPipelineForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Descrição opcional" />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setShowPipelineModal(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={pipelineLoading}>
+                      {pipelineLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Salvar
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Modal: confirmar exclusão pipeline */}
+            <Dialog open={showDeletePipelineModal} onOpenChange={open => { if (!open) { setShowDeletePipelineModal(false); setDeletingPipeline(null) } }}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Excluir Pipeline</DialogTitle>
+                  <DialogDescription>
+                    Tem certeza que deseja excluir <strong>{deletingPipeline?.nome}</strong>? Todos os estágios serão removidos. Esta ação não pode ser desfeita.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => { setShowDeletePipelineModal(false); setDeletingPipeline(null) }}>Cancelar</Button>
+                  <Button variant="destructive" onClick={handleDeletePipeline} disabled={pipelineLoading}>
+                    {pipelineLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Excluir
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Modal: criar/editar estágio */}
+            <Dialog open={showEstagioModal} onOpenChange={open => { if (!open) setShowEstagioModal(false) }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{editingEstagio ? 'Editar Estágio' : 'Novo Estágio'}</DialogTitle>
+                  <DialogDescription>Configure o nome e a cor do estágio no pipeline.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSaveEstagio} className="space-y-4">
+                  {estagioError && (
+                    <div className="px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">{estagioError}</div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label>Nome *</Label>
+                    <Input required value={estagioForm.nome} onChange={e => setEstagioForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Proposta Técnica" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Descrição</Label>
+                    <Input value={estagioForm.descricao} onChange={e => setEstagioForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Descrição opcional" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cor</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {STAGE_COLORS.map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setEstagioForm(f => ({ ...f, cor: color }))}
+                          className="w-7 h-7 rounded-full border-2 transition-all"
+                          style={{
+                            backgroundColor: color,
+                            borderColor: estagioForm.cor === color ? '#000' : 'transparent',
+                            transform: estagioForm.cor === color ? 'scale(1.2)' : 'scale(1)',
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="w-5 h-5 rounded-full border" style={{ backgroundColor: estagioForm.cor }} />
+                      <Input
+                        value={estagioForm.cor}
+                        onChange={e => setEstagioForm(f => ({ ...f, cor: e.target.value }))}
+                        placeholder="#3498db"
+                        className="w-28 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setShowEstagioModal(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={estagioLoading}>
+                      {estagioLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Salvar
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Modal: confirmar exclusão estágio */}
+            <Dialog open={showDeleteEstagioModal} onOpenChange={open => { if (!open) { setShowDeleteEstagioModal(false); setDeletingEstagio(null) } }}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Excluir Estágio</DialogTitle>
+                  <DialogDescription>
+                    Tem certeza que deseja excluir <strong>{deletingEstagio?.nome}</strong>? Estágios com leads não podem ser excluídos.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => { setShowDeleteEstagioModal(false); setDeletingEstagio(null) }}>Cancelar</Button>
+                  <Button variant="destructive" onClick={handleDeleteEstagio} disabled={estagioLoading}>
+                    {estagioLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Excluir
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
         )}
       </Tabs>
