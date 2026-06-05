@@ -8,7 +8,7 @@ import { cn, getInitials, formatDate } from '@/lib/utils'
 import {
   Loader2, Check, Lock, AlertTriangle, Eye, EyeOff,
   User, Settings2, Users, Plus, GitBranch, Pencil, Trash2,
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, Webhook, Copy, RefreshCw, ExternalLink,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -79,6 +79,39 @@ export default function PerfilPage() {
   const isAdmin = user?.perfil
     ? (typeof user.perfil === 'string' ? user.perfil : user.perfil.nome) === 'Administrador'
     : false
+
+  // ── Webhook (admin) ──────────────────────────────────────────────────────────
+  const [tokenVisible, setTokenVisible] = useState(false)
+  const [copied, setCopied] = useState<'token' | 'url' | 'curl' | null>(null)
+  const [regenerating, setRegenerating] = useState(false)
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
+
+  const { data: webhookConfig, mutate: mutateWebhook } = useSWR(
+    isAdmin ? '/api/webhook/config' : null, fetcher
+  )
+  const webhookToken: string = webhookConfig?.webhook_token ?? ''
+  const webhookUrl: string = webhookConfig?.webhook_url ?? ''
+
+  const copyToClipboard = async (text: string, field: 'token' | 'url' | 'curl') => {
+    await navigator.clipboard.writeText(text)
+    setCopied(field)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleRegenerate = async () => {
+    setRegenerating(true)
+    try {
+      await api.post('/api/webhook/token/regenerate')
+      mutateWebhook()
+      setShowRegenerateConfirm(false)
+      setTokenVisible(false)
+    } catch { /* silencioso */ }
+    finally { setRegenerating(false) }
+  }
+
+  const curlExample = webhookToken
+    ? `curl -X POST ${webhookUrl} \\\n  -H "Content-Type: application/json" \\\n  -H "X-Webhook-Token: ${webhookToken}" \\\n  -d '{"nome":"João Silva","email":"joao@empresa.com","telefone":"11999999999","empresa":"Empresa X","origem":"Site"}'`
+    : ''
 
   // ── Usuários (admin) ─────────────────────────────────────────────────────────
   const [showUsuarioModal, setShowUsuarioModal] = useState(false)
@@ -339,6 +372,12 @@ export default function PerfilPage() {
             <TabsTrigger value="configuracoes" className="gap-2">
               <GitBranch className="h-4 w-4" />
               Pipeline
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="integracoes" className="gap-2">
+              <Webhook className="h-4 w-4" />
+              Integrações
             </TabsTrigger>
           )}
         </TabsList>
@@ -803,6 +842,161 @@ export default function PerfilPage() {
                   <Button variant="outline" onClick={() => { setShowDeleteEstagioModal(false); setDeletingEstagio(null) }}>Cancelar</Button>
                   <Button variant="destructive" onClick={handleDeleteEstagio} disabled={estagioLoading}>
                     {estagioLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Excluir
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+        )}
+
+        {/* ── Tab Integrações (admin only) ── */}
+        {isAdmin && (
+          <TabsContent value="integracoes" className="mt-4 space-y-6">
+
+            {/* Webhook card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <Webhook className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-base">Webhook de Leads</CardTitle>
+                </div>
+                <CardDescription>
+                  Envie leads automaticamente de formulários, anúncios e integrações externas para este workspace.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+
+                {/* URL do Webhook */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">URL do Endpoint</Label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-sm bg-muted px-3 py-2 rounded-md font-mono truncate">
+                      {webhookUrl || 'Carregando...'}
+                    </code>
+                    <Button variant="outline" size="icon" className="h-9 w-9 shrink-0"
+                      onClick={() => copyToClipboard(webhookUrl, 'url')} disabled={!webhookUrl}>
+                      {copied === 'url' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Token */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Token de Autenticação</Label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <code className="block text-sm bg-muted px-3 py-2 rounded-md font-mono truncate pr-10">
+                        {!webhookToken
+                          ? 'Carregando...'
+                          : tokenVisible
+                          ? webhookToken
+                          : '•'.repeat(Math.min(webhookToken.length, 40))}
+                      </code>
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setTokenVisible(v => !v)}
+                      >
+                        {tokenVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <Button variant="outline" size="icon" className="h-9 w-9 shrink-0"
+                      onClick={() => copyToClipboard(webhookToken, 'token')} disabled={!webhookToken}>
+                      {copied === 'token' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-9 w-9 shrink-0text-muted-foreground"
+                      onClick={() => setShowRegenerateConfirm(true)} disabled={!webhookToken}>
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Envie o token no header <code className="bg-muted px-1 rounded text-[11px]">X-Webhook-Token</code> de cada requisição.
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* Campos suportados */}
+                <div className="space-y-3">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Campos do Payload (JSON)</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-foreground">Obrigatórios</p>
+                      {[
+                        { field: 'nome', aliases: 'name, full_name' },
+                        { field: 'email', aliases: 'email_address' },
+                      ].map(({ field, aliases }) => (
+                        <div key={field} className="flex items-start gap-2 text-xs">
+                          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px] shrink-0">{field}</code>
+                          <span className="text-muted-foreground">ou {aliases}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-foreground">Opcionais</p>
+                      {[
+                        { field: 'telefone', aliases: 'phone, mobile' },
+                        { field: 'empresa', aliases: 'company' },
+                        { field: 'cargo', aliases: 'job_title, position' },
+                        { field: 'interesse', aliases: 'interest, subject' },
+                        { field: 'origem', aliases: 'source, utm_source' },
+                        { field: 'observacoes', aliases: 'message, notes' },
+                      ].map(({ field, aliases }) => (
+                        <div key={field} className="flex items-start gap-2 text-xs">
+                          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px] shrink-0">{field}</code>
+                          <span className="text-muted-foreground">ou {aliases}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Exemplo cURL */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Exemplo cURL</Label>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
+                      onClick={() => copyToClipboard(curlExample, 'curl')} disabled={!curlExample}>
+                      {copied === 'curl' ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied === 'curl' ? 'Copiado!' : 'Copiar'}
+                    </Button>
+                  </div>
+                  <pre className="text-[11px] bg-muted rounded-md p-3 overflow-x-auto font-mono leading-relaxed whitespace-pre-wrap break-all">
+                    {curlExample || 'Carregando token...'}
+                  </pre>
+                </div>
+
+                {/* Integrações populares */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Compatível com</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Meta Ads (Lead Ads)', 'Google Ads', 'RD Station', 'Zapier', 'Make (Integromat)', 'Typeform', 'Tally', 'Google Forms'].map(tool => (
+                      <Badge key={tool} variant="outline" className="text-xs font-normal">{tool}</Badge>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Configure qualquer ferramenta que envie requisições HTTP POST com JSON para receber leads automaticamente.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Modal de confirmação de regeneração */}
+            <Dialog open={showRegenerateConfirm} onOpenChange={open => { if (!open) setShowRegenerateConfirm(false) }}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Regenerar Token</DialogTitle>
+                  <DialogDescription>
+                    O token atual deixará de funcionar imediatamente. Todas as integrações que o utilizam precisarão ser atualizadas com o novo token. Esta ação não pode ser desfeita.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)}>Cancelar</Button>
+                  <Button variant="destructive" onClick={handleRegenerate} disabled={regenerating}>
+                    {regenerating && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                    Regenerar Token
                   </Button>
                 </DialogFooter>
               </DialogContent>

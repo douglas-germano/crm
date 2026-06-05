@@ -56,6 +56,7 @@ def create_app(config_name=None):
     from app.blueprints.admin import admin_bp
     from app.blueprints.ativos import ativos_bp
     from app.blueprints.inspecoes import inspecoes_bp
+    from app.blueprints.webhook import webhook_bp
 
     app.register_blueprint(usuarios_bp, url_prefix='/api/usuarios')
     app.register_blueprint(tenants_bp, url_prefix='/api/tenants')
@@ -69,6 +70,7 @@ def create_app(config_name=None):
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(ativos_bp, url_prefix='/api/ativos')
     app.register_blueprint(inspecoes_bp, url_prefix='/api/inspecoes')
+    app.register_blueprint(webhook_bp, url_prefix='/api/webhook')
 
     @app.get('/api/health')
     def health_check():
@@ -86,7 +88,9 @@ def create_app(config_name=None):
     def set_tenant_schema():
         exempt_endpoints = ['usuarios.login', 'usuarios.esqueci_senha', 'usuarios.redefinir_senha']
         if request.endpoint:
-            if any(request.endpoint.startswith(ep) for ep in exempt_endpoints) or request.endpoint.startswith('tenants.'):
+            if (any(request.endpoint.startswith(ep) for ep in exempt_endpoints)
+                    or request.endpoint.startswith('tenants.')
+                    or request.endpoint == 'webhook.receber_lead'):
                 return
 
         try:

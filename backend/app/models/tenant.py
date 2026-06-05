@@ -10,6 +10,7 @@ class Tenant(db.Model):
     nome_fantasia = db.Column(db.String(100), nullable=False)
     subdominio = db.Column(db.String(50), unique=True, nullable=False)
     db_schema = db.Column(db.String(50), unique=True, nullable=False)
+    webhook_token = db.Column(db.String(64), unique=True, nullable=True)
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
