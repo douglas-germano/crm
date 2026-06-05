@@ -90,7 +90,7 @@ def create_app(config_name=None):
         if request.endpoint:
             if (any(request.endpoint.startswith(ep) for ep in exempt_endpoints)
                     or request.endpoint.startswith('tenants.')
-                    or request.endpoint == 'webhook.receber_lead'):
+                    or request.endpoint in ('webhook.receber_lead',)):
                 return
 
         try:

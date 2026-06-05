@@ -44,7 +44,8 @@ def _set_schema(schema: str):
 # ---------------------------------------------------------------------------
 
 @webhook_bp.route('/leads', methods=['POST'])
-def receber_lead():
+@webhook_bp.route('/<workspace>/leads', methods=['POST'])
+def receber_lead(workspace: str | None = None):
     """
     Endpoint público autenticado apenas pelo webhook_token do tenant.
 
@@ -70,8 +71,19 @@ def receber_lead():
     if not token:
         return jsonify({'erro': 'Token de webhook obrigatório. Use o header X-Webhook-Token ou ?token=<token>.'}), 401
 
-    # 1. Tenta resolver pelo token global do tenant (schema público)
-    tenant = Tenant.query.filter_by(webhook_token=token).first()
+    # Se workspace foi informado na URL, restringir busca a esse tenant
+    tenant_hint = None
+    if workspace:
+        tenant_hint = Tenant.query.filter_by(subdominio=workspace).first()
+        if not tenant_hint:
+            return jsonify({'erro': f"Workspace '{workspace}' não encontrado."}), 404
+
+    # 1. Tenta resolver pelo token global do tenant
+    if tenant_hint:
+        tenant = tenant_hint if tenant_hint.webhook_token == token else None
+    else:
+        tenant = Tenant.query.filter_by(webhook_token=token).first()
+
     integracao = None
     origem_forcada = None
 
@@ -80,8 +92,8 @@ def receber_lead():
             return jsonify({'erro': 'Configuração de tenant inválida.'}), 500
     else:
         # 2. Tenta resolver por token de integração específica
-        #    Percorre todos os tenants para encontrar o schema correto
-        for t in Tenant.query.all():
+        tenants_to_search = [tenant_hint] if tenant_hint else Tenant.query.all()
+        for t in tenants_to_search:
             if not re.match(r'^[a-z_][a-z0-9_]*$', t.db_schema):
                 continue
             _set_schema(t.db_schema)
@@ -180,7 +192,9 @@ def obter_config():
 
     return jsonify({
         'webhook_token': tenant.webhook_token,
-        'webhook_url': f'{base_url}/api/webhook/leads',
+        'webhook_url': f'{base_url}/api/webhook/{tenant.subdominio}/leads',
+        'webhook_url_generica': f'{base_url}/api/webhook/leads',
+        'workspace': tenant.subdominio,
         'campos_suportados': {
             'obrigatorios': ['nome (ou name)', 'email'],
             'opcionais': ['telefone', 'empresa', 'cargo', 'interesse', 'origem', 'observacoes'],
