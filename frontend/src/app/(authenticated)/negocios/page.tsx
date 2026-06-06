@@ -689,7 +689,7 @@ export default function NegociosPage() {
                           onClick={(e) => { e.stopPropagation(); openDeleteModal(negocio) }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                        <Button variant="ghost" size="icon" className="h-8 w-8"
                           title="Ver detalhes"
                           onClick={(e) => { e.stopPropagation(); setSelectedNegocio(negocio) }}>
                           <ChevronRight className="h-4 w-4" />

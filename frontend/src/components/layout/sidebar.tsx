@@ -244,12 +244,16 @@ export default function Sidebar() {
 
         {/* Toggle flutuante quando colapsado */}
         {collapsed && (
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={toggle}
-            className="absolute -right-3 top-[52px] z-50 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-brand-800 text-steel-300 shadow hover:text-white transition-colors"
+            className="absolute -right-3 top-[52px] z-50 h-6 w-6 rounded-full border border-white/20 bg-brand-800 text-steel-300 shadow hover:bg-brand-700 hover:text-white"
+            title="Expandir menu"
           >
             <ChevronsRight className="h-3 w-3" />
-          </button>
+          </Button>
         )}
 
         {/* ---- Navigation ---- */}

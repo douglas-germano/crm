@@ -121,14 +121,15 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="senha">Senha</Label>
-                <button
+                <Button
                   type="button"
+                  variant="link"
                   onClick={() => router.push('/esqueci-senha')}
-                  className="text-[11px] font-semibold text-brand-500 hover:underline"
+                  className="text-[11px]"
                   tabIndex={-1}
                 >
                   Esqueci minha senha
-                </button>
+                </Button>
               </div>
               <Input
                 id="senha"
@@ -144,7 +145,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-brand-500 hover:bg-brand-600 text-white mt-2"
+              className="w-full mt-2"
             >
               {isSubmitting ? (
                 <>
@@ -162,7 +163,7 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center text-sm">
             <span className="text-muted-foreground">Não tem um Workspace? </span>
-            <Button variant="link" className="p-0 h-auto font-semibold text-brand-500" onClick={() => router.push('/registro')}>
+            <Button variant="link" onClick={() => router.push('/registro')}>
               Cadastre-se grátis
             </Button>
           </div>

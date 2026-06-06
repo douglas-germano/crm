@@ -85,6 +85,8 @@ function EstagioRow({
           {CORES_PRESET.map(c => (
             <button
               key={c}
+              type="button"
+              aria-label={`Selecionar cor ${c}`}
               className={cn(
                 'w-4 h-4 rounded-full transition-transform hover:scale-110',
                 cor === c && 'ring-2 ring-foreground ring-offset-1 ring-offset-background'
@@ -94,19 +96,27 @@ function EstagioRow({
             />
           ))}
         </div>
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={handleSave}
           disabled={saving}
-          className="text-green-600 hover:text-green-700 disabled:opacity-50 shrink-0"
+          className="h-7 w-7 shrink-0"
+          aria-label="Salvar estágio"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={handleCancel}
-          className="text-muted-foreground hover:text-foreground shrink-0"
+          className="h-7 w-7 shrink-0"
+          aria-label="Cancelar edição"
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
     );
   }
@@ -117,18 +127,26 @@ function EstagioRow({
       <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: estagio.cor || '#64748b' }} />
       <span className="text-sm flex-1 truncate text-foreground">{estagio.nome}</span>
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={() => setEditing(true)}
-          className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          className="h-7 w-7 text-muted-foreground"
+          aria-label="Editar estágio"
         >
           <Pencil className="h-3.5 w-3.5" />
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={() => onDelete(estagio.id)}
-          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          aria-label="Excluir estágio"
         >
           <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -283,6 +301,7 @@ export default function PipelineSettingsPage() {
               return (
                 <button
                   key={p.id}
+                  type="button"
                   onClick={() => setSelectedId(p.id)}
                   className={cn(
                     'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors border',
@@ -381,6 +400,8 @@ export default function PipelineSettingsPage() {
                           {CORES_PRESET.map(c => (
                             <button
                               key={c}
+                              type="button"
+                              aria-label={`Selecionar cor ${c}`}
                               className={cn(
                                 'w-4 h-4 rounded-full transition-transform hover:scale-110',
                                 novaCor === c && 'ring-2 ring-foreground ring-offset-1 ring-offset-background'
@@ -390,19 +411,27 @@ export default function PipelineSettingsPage() {
                             />
                           ))}
                         </div>
-                        <button
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={handleCreateEstagio}
                           disabled={savingEstagio}
-                          className="text-green-600 hover:text-green-700 disabled:opacity-50 shrink-0"
+                          className="h-7 w-7 shrink-0"
+                          aria-label="Salvar estágio"
                         >
                           {savingEstagio ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={() => setAddingEstagio(false)}
-                          className="text-muted-foreground hover:text-foreground shrink-0"
+                          className="h-7 w-7 shrink-0"
+                          aria-label="Cancelar novo estágio"
                         >
                           <X className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>

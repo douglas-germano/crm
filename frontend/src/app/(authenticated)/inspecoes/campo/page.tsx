@@ -242,10 +242,10 @@ export default function InspecaoCampoPage() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white font-bold" onClick={baixarPdfLaudo}>
+            <Button size="lg" onClick={baixarPdfLaudo}>
               <FileText className="mr-2 h-5 w-5" /> Baixar Laudo PDF + ART
             </Button>
-            <Button size="lg" variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50 font-bold" onClick={() => router.push('/dashboard')}>
+            <Button size="lg" variant="outline" onClick={() => router.push('/dashboard')}>
               Voltar ao Dashboard
             </Button>
           </div>

@@ -135,7 +135,7 @@ export default function RegistroPage() {
 
               <Button 
                 type="button" 
-                className="w-full bg-slate-800 hover:bg-slate-700 mt-4" 
+                className="w-full mt-4"
                 onClick={() => setStep(2)}
                 disabled={!nomeEmpresa || !workspace}
               >
@@ -209,7 +209,7 @@ export default function RegistroPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !nomeAdmin || !emailAdmin || !senhaAdmin}
-                  className="w-2/3 bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/20"
+                  className="w-2/3"
                 >
                   {isSubmitting ? (
                     <>
@@ -231,7 +231,7 @@ export default function RegistroPage() {
           {!isSubmitting && (
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Já tem um Workspace? </span>
-              <Button variant="link" className="p-0 h-auto font-semibold text-brand-500" onClick={() => router.push('/login')}>
+              <Button variant="link" onClick={() => router.push('/login')}>
                 Faça login
               </Button>
             </div>

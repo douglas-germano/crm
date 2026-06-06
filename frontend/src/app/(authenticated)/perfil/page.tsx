@@ -501,10 +501,10 @@ export default function PerfilPage() {
                       }}
                       className={cn(senhaErrors.senha_atual && 'border-destructive', 'pr-9')}
                     />
-                    <button type="button" onClick={() => setShowSenhaAtual(v => !v)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setShowSenhaAtual(v => !v)}
+                      className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground">
                       {showSenhaAtual ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                    </Button>
                   </div>
                   {senhaErrors.senha_atual && <p className="text-destructive text-xs">{senhaErrors.senha_atual}</p>}
                 </div>
@@ -524,10 +524,10 @@ export default function PerfilPage() {
                         }}
                         className={cn(senhaErrors.nova_senha && 'border-destructive', 'pr-9')}
                       />
-                      <button type="button" onClick={() => setShowNovaSenha(v => !v)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => setShowNovaSenha(v => !v)}
+                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground">
                         {showNovaSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+                      </Button>
                     </div>
                     {senhaErrors.nova_senha && <p className="text-destructive text-xs">{senhaErrors.nova_senha}</p>}
                   </div>
@@ -543,10 +543,10 @@ export default function PerfilPage() {
                         }}
                         className={cn(senhaErrors.confirmar_senha && 'border-destructive', 'pr-9')}
                       />
-                      <button type="button" onClick={() => setShowConfirmarSenha(v => !v)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => setShowConfirmarSenha(v => !v)}
+                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground">
                         {showConfirmarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+                      </Button>
                     </div>
                     {senhaErrors.confirmar_senha && <p className="text-destructive text-xs">{senhaErrors.confirmar_senha}</p>}
                   </div>
@@ -698,7 +698,7 @@ export default function PerfilPage() {
                       className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors select-none"
                       onClick={() => setExpandedPipeline(expandedPipeline === pipeline.id ? null : pipeline.id)}
                     >
-                      <button className="text-muted-foreground">
+                      <button type="button" className="text-muted-foreground">
                         {expandedPipeline === pipeline.id
                           ? <ChevronDown className="h-4 w-4" />
                           : <ChevronRight className="h-4 w-4" />}
@@ -843,6 +843,7 @@ export default function PerfilPage() {
                         <button
                           key={color}
                           type="button"
+                          aria-label={`Selecionar cor ${color}`}
                           onClick={() => setEstagioForm(f => ({ ...f, cor: color }))}
                           className="w-7 h-7 rounded-full border-2 transition-all"
                           style={{
@@ -1008,11 +1009,11 @@ export default function PerfilPage() {
                             <code className="block text-xs bg-muted px-3 py-2 rounded-md font-mono truncate">
                               {visibleTokens.has(integ.id) ? integ.token : '•'.repeat(40)}
                             </code>
-                            <button type="button"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            <Button type="button" variant="ghost" size="icon"
+                              className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 text-muted-foreground"
                               onClick={() => toggleTokenVisible(integ.id)}>
                               {visibleTokens.has(integ.id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                            </button>
+                            </Button>
                           </div>
                           <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
                             onClick={() => copyToClipboard(integ.token, `token-${integ.id}`)}>
