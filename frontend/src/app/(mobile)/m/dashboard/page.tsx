@@ -20,7 +20,7 @@ const SHORTCUTS = [
 ] as const;
 
 export default function MobileDashboardPage() {
-  const { data: stats, isLoading } = useSWR<DashboardStats>('/api/dashboard/stats', fetcher);
+  const { data: stats, isLoading } = useSWR<DashboardStats>('/api/v1/crm/dashboard/stats', fetcher);
 
   return (
     <div className="p-4 space-y-6">

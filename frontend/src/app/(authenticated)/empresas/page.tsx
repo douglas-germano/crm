@@ -124,15 +124,15 @@ export default function EmpresasPage() {
   const params = new URLSearchParams({ page: String(page), per_page: '12' })
   if (search) params.set('busca', search)
 
-  const { data, mutate, isLoading } = useSWR(`/api/empresas?${params}`, fetcher)
+  const { data, mutate, isLoading } = useSWR(`/api/v1/crm/empresas?${params}`, fetcher)
 
   const { data: expandedData, mutate: mutateExpanded } = useSWR(
-    selectedEmpresa ? `/api/empresas/${selectedEmpresa.id}` : null,
+    selectedEmpresa ? `/api/v1/crm/empresas/${selectedEmpresa.id}` : null,
     fetcher
   )
 
   const { data: contratosData, mutate: mutateContratos } = useSWR(
-    selectedEmpresa ? `/api/inspecoes/contratos-amc?empresa_id=${selectedEmpresa.id}` : null,
+    selectedEmpresa ? `/api/v1/inspect/inspecoes/contratos-amc?empresa_id=${selectedEmpresa.id}` : null,
     fetcher
   )
 
@@ -197,9 +197,9 @@ export default function EmpresasPage() {
     setApiError('')
     try {
       if (editingEmpresa) {
-        await api.put(`/api/empresas/${editingEmpresa.id}`, form)
+        await api.put(`/api/v1/crm/empresas/${editingEmpresa.id}`, form)
       } else {
-        await api.post('/api/empresas', form)
+        await api.post('/api/v1/crm/empresas', form)
       }
       setForm({ ...EMPTY_FORM })
       closeModal()
@@ -228,7 +228,7 @@ export default function EmpresasPage() {
     if (!contatoForm.nome.trim() || !selectedEmpresa) return
     setContatoLoading(true)
     try {
-      await api.post(`/api/empresas/${selectedEmpresa.id}/contatos`, contatoForm)
+      await api.post(`/api/v1/crm/empresas/${selectedEmpresa.id}/contatos`, contatoForm)
       setContatoForm({ ...EMPTY_CONTATO })
       setShowContatoForm(false)
       mutateExpanded()
@@ -258,7 +258,7 @@ export default function EmpresasPage() {
     setContratoLoading(true)
     setContratoApiError('')
     try {
-      await api.post('/api/inspecoes/contratos-amc', {
+      await api.post('/api/v1/inspect/inspecoes/contratos-amc', {
         titulo: contratoForm.titulo,
         empresa_id: selectedEmpresa.id,
         plano: contratoForm.plano,

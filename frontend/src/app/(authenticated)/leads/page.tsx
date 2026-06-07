@@ -72,8 +72,8 @@ export default function LeadsPage() {
   if (status) params.set('status', status)
   if (search) params.set('busca', search)
 
-  const { data, mutate, isLoading } = useSWR(`/api/leads?${params}`, fetcher)
-  const { data: empresasData } = useSWR('/api/empresas?per_page=100', fetcher)
+  const { data, mutate, isLoading } = useSWR(`/api/v1/crm/leads?${params}`, fetcher)
+  const { data: empresasData } = useSWR('/api/v1/crm/empresas?per_page=100', fetcher)
 
   const leads: Lead[] = data?.leads ?? []
   const totalPages = data?.pages ?? 1
@@ -142,7 +142,7 @@ export default function LeadsPage() {
     setLoading(true)
     setApiError('')
     try {
-      await api.post('/api/leads', buildPayload())
+      await api.post('/api/v1/crm/leads', buildPayload())
       closeModal()
       setSuccessMessage('Lead criado com sucesso!')
       mutate()
@@ -160,7 +160,7 @@ export default function LeadsPage() {
     setLoading(true)
     setApiError('')
     try {
-      await api.put(`/api/leads/${editingLead.id}`, buildPayload())
+      await api.put(`/api/v1/crm/leads/${editingLead.id}`, buildPayload())
       closeModal()
       setSuccessMessage('Lead atualizado com sucesso!')
       mutate()
@@ -174,7 +174,7 @@ export default function LeadsPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/api/leads/${id}`)
+      await api.delete(`/api/v1/crm/leads/${id}`)
       setDeleteId(null)
       mutate()
     } catch {

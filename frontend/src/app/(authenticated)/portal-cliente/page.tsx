@@ -23,7 +23,7 @@ export default function PortalClientePage() {
     async function carregarInicial() {
       try {
         setLoading(true);
-        const res = await api.get('/api/empresas');
+        const res = await api.get('/api/v1/crm/empresas');
         const dataEmpresas: Empresa[] = res.data.empresas ?? res.data;
         setEmpresas(dataEmpresas);
 
@@ -32,8 +32,8 @@ export default function PortalClientePage() {
           setEmpresaSelecionada(primeiraId);
 
           const [resAtivos, resInspecoes] = await Promise.all([
-            api.get(`/api/ativos?empresa_id=${primeiraId}`),
-            api.get(`/api/inspecoes?empresa_id=${primeiraId}`),
+            api.get(`/api/v1/inspect/ativos?empresa_id=${primeiraId}`),
+            api.get(`/api/v1/inspect/inspecoes?empresa_id=${primeiraId}`),
           ]);
           setAtivos(resAtivos.data);
           setInspecoes(resInspecoes.data);
@@ -55,8 +55,8 @@ export default function PortalClientePage() {
       try {
         setLoading(true);
         const [resAtivos, resInspecoes] = await Promise.all([
-          api.get(`/api/ativos?empresa_id=${empresaSelecionada}`),
-          api.get(`/api/inspecoes?empresa_id=${empresaSelecionada}`),
+          api.get(`/api/v1/inspect/ativos?empresa_id=${empresaSelecionada}`),
+          api.get(`/api/v1/inspect/inspecoes?empresa_id=${empresaSelecionada}`),
         ]);
         setAtivos(resAtivos.data);
         setInspecoes(resInspecoes.data);
@@ -72,7 +72,7 @@ export default function PortalClientePage() {
   const baixarPdfLaudo = async (inspecaoId: number) => {
     try {
       const token = localStorage.getItem('token');
-      const url = `${api.defaults.baseURL}/api/inspecoes/${inspecaoId}/pdf`;
+      const url = `${api.defaults.baseURL}/api/v1/inspect/inspecoes/${inspecaoId}/pdf`;
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });

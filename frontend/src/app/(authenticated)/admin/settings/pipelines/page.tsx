@@ -155,7 +155,7 @@ function EstagioRow({
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function PipelineSettingsPage() {
-  const { data, isLoading, mutate } = useSWR('/api/pipelines', fetcher);
+  const { data, isLoading, mutate } = useSWR('/api/v1/crm/pipelines', fetcher);
   const pipelines: Pipeline[] = data?.pipelines ?? data ?? [];
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -165,7 +165,7 @@ export default function PipelineSettingsPage() {
   const selected = activePipeline ?? null;
 
   const { data: detailData, isLoading: loadingDetail, mutate: mutateDetail } = useSWR(
-    selected ? `/api/pipelines/${selected.id}` : null,
+    selected ? `/api/v1/crm/pipelines/${selected.id}` : null,
     fetcher
   );
   const estagios: Estagio[] = (detailData?.estagios ?? []).sort((a: Estagio, b: Estagio) => a.ordem - b.ordem);
@@ -184,9 +184,9 @@ export default function PipelineSettingsPage() {
     setPSaving(true);
     try {
       if (pipelineModal.editing) {
-        await api.put(`/api/pipelines/${pipelineModal.editing.id}`, { nome: pNome.trim(), descricao: pDesc.trim() });
+        await api.put(`/api/v1/crm/pipelines/${pipelineModal.editing.id}`, { nome: pNome.trim(), descricao: pDesc.trim() });
       } else {
-        const res = await api.post('/api/pipelines', { nome: pNome.trim(), descricao: pDesc.trim() });
+        const res = await api.post('/api/v1/crm/pipelines', { nome: pNome.trim(), descricao: pDesc.trim() });
         setSelectedId(res.data.pipeline?.id ?? null);
       }
       await mutate();
@@ -204,7 +204,7 @@ export default function PipelineSettingsPage() {
     if (!deletePipelineId) return;
     setDeletingPipeline(true);
     try {
-      await api.delete(`/api/pipelines/${deletePipelineId}`);
+      await api.delete(`/api/v1/crm/pipelines/${deletePipelineId}`);
       if (selected?.id === deletePipelineId) setSelectedId(null);
       await mutate();
     } finally {
@@ -223,7 +223,7 @@ export default function PipelineSettingsPage() {
     if (!novoNome.trim() || !selected) return;
     setSavingEstagio(true);
     try {
-      await api.post(`/api/pipelines/${selected.id}/estagios`, {
+      await api.post(`/api/v1/crm/pipelines/${selected.id}/estagios`, {
         nome: novoNome.trim(),
         cor: novaCor,
         ordem: estagios.length,
@@ -238,7 +238,7 @@ export default function PipelineSettingsPage() {
   };
 
   const handleSaveEstagio = async (id: number, nome: string, cor: string) => {
-    await api.put(`/api/pipelines/estagios/${id}`, { nome, cor });
+    await api.put(`/api/v1/crm/pipelines/estagios/${id}`, { nome, cor });
     await mutateDetail();
   };
 
@@ -250,7 +250,7 @@ export default function PipelineSettingsPage() {
     if (!deleteEstagioId) return;
     setDeletingEstagio(true);
     try {
-      await api.delete(`/api/pipelines/estagios/${deleteEstagioId}`);
+      await api.delete(`/api/v1/crm/pipelines/estagios/${deleteEstagioId}`);
       await mutateDetail();
     } finally {
       setDeletingEstagio(false);

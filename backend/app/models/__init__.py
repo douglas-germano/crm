@@ -1,17 +1,26 @@
-from app.models.tenant import Tenant
-from app.models.usuario import Usuario
-from app.models.perfil import Perfil, Permissao
-from app.models.log_atividade import LogAtividade
-from app.models.lead import Lead
-from app.models.pipeline import Pipeline, Estagio, LeadEstagio
-from app.models.negocio import Negocio, AtividadeNegocio
-from app.models.empresa import Empresa
-from app.models.contato import Contato
-from app.models.servico import Servico
-from app.models.projeto import Projeto
-from app.models.tarefa import Tarefa, ChecklistItem, ComentarioTarefa
-from app.models.ativo import Ativo
-from app.models.contrato_amc import ContratoAMC
-from app.models.template_checklist import TemplateChecklist
-from app.models.inspecao import Inspecao
-from app.models.webhook_integracao import WebhookIntegracao
+from app.domains.core.models.tenant import Tenant
+from app.domains.core.models.usuario import Usuario
+from app.domains.core.models.perfil import Perfil, Permissao
+from app.domains.core.models.log_atividade import LogAtividade
+from app.domains.crm.models.lead import Lead
+from app.domains.crm.models.pipeline import Pipeline, Estagio, LeadEstagio
+from app.domains.crm.models.negocio import Negocio, AtividadeNegocio
+from app.domains.crm.models.empresa import Empresa
+from app.domains.crm.models.contato import Contato
+from app.domains.crm.models.servico import Servico
+from app.domains.crm.models.projeto import Projeto
+from app.domains.crm.models.tarefa import Tarefa, ChecklistItem, ComentarioTarefa
+from app.domains.inspect.models.ativo import Ativo
+from app.domains.inspect.models.contrato_amc import ContratoAMC
+from app.domains.inspect.models.template_checklist import TemplateChecklist
+from app.domains.inspect.models.inspecao import Inspecao
+from app.domains.inspect.models.ordem_servico import (
+    ApontamentoHora,
+    AssinaturaCampo,
+    EvidenciaCampo,
+    ExecucaoCampo,
+    MaterialUtilizado,
+    OrdemServico,
+    RelatorioTecnico,
+)
+from app.domains.core.models.webhook_integracao import WebhookIntegracao

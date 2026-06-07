@@ -117,13 +117,13 @@ export default function ProjetosPage() {
   if (busca) params.set('busca', busca)
 
   const { data: projetos = [], mutate, isLoading } = useSWR(
-    `/api/projetos${params.toString() ? '?' + params : ''}`,
+    `/api/v1/crm/projetos${params.toString() ? '?' + params : ''}`,
     fetcher
   )
 
-  const { data: empresasResp } = useSWR('/api/empresas?per_page=100', fetcher)
-  const { data: usuariosData } = useSWR('/api/usuarios', fetcher)
-  const { data: negocios = [] } = useSWR('/api/negocios', fetcher)
+  const { data: empresasResp } = useSWR('/api/v1/crm/empresas?per_page=100', fetcher)
+  const { data: usuariosData } = useSWR('/api/v1/core/usuarios', fetcher)
+  const { data: negocios = [] } = useSWR('/api/v1/crm/negocios', fetcher)
   const empresas: { id: number; razao_social: string; nome_fantasia?: string }[] = empresasResp?.empresas ?? []
   const usuarios = usuariosData?.usuarios ?? []
 
@@ -143,7 +143,7 @@ export default function ProjetosPage() {
         gerente_id: form.gerente_id ? Number(form.gerente_id) : undefined,
         negocio_id: form.negocio_id ? Number(form.negocio_id) : undefined,
       }
-      await api.post('/api/projetos', payload)
+      await api.post('/api/v1/crm/projetos', payload)
       setForm({ ...EMPTY_FORM })
       setShowCreateModal(false)
       mutate()
@@ -160,7 +160,7 @@ export default function ProjetosPage() {
     setLoading(true)
     setApiError('')
     try {
-      await api.delete(`/api/projetos/${deletingProjeto.id}`)
+      await api.delete(`/api/v1/crm/projetos/${deletingProjeto.id}`)
       setShowDeleteModal(false)
       setDeletingProjeto(null)
       mutate()

@@ -62,8 +62,8 @@ export default function ContratosAmcPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [apiError, setApiError] = useState('');
 
-  const { data: contratosRaw, mutate, isLoading } = useSWR('/api/inspecoes/contratos-amc', fetcher);
-  const { data: empresasResp } = useSWR('/api/empresas?per_page=200', fetcher);
+  const { data: contratosRaw, mutate, isLoading } = useSWR('/api/v1/inspect/inspecoes/contratos-amc', fetcher);
+  const { data: empresasResp } = useSWR('/api/v1/crm/empresas?per_page=200', fetcher);
 
   const contratos: ContratoAMC[] = Array.isArray(contratosRaw) ? contratosRaw : [];
   const empresas: Empresa[] = empresasResp?.empresas ?? [];
@@ -123,10 +123,10 @@ export default function ContratosAmcPage() {
         data_fim: form.data_fim || null,
       };
       if (editingContrato) {
-        await api.put(`/api/inspecoes/contratos-amc/${editingContrato.id}`, payload);
+        await api.put(`/api/v1/inspect/inspecoes/contratos-amc/${editingContrato.id}`, payload);
         toast('Contrato AMC atualizado com sucesso!');
       } else {
-        await api.post('/api/inspecoes/contratos-amc', { ...payload, status: 'ativo' });
+        await api.post('/api/v1/inspect/inspecoes/contratos-amc', { ...payload, status: 'ativo' });
         toast('Contrato AMC criado com sucesso!');
       }
       resetForm();
@@ -143,7 +143,7 @@ export default function ContratosAmcPage() {
   const handleExcluir = async () => {
     if (!deleteId) return;
     try {
-      await api.delete(`/api/inspecoes/contratos-amc/${deleteId}`);
+      await api.delete(`/api/v1/inspect/inspecoes/contratos-amc/${deleteId}`);
       mutate();
       toast('Contrato excluído com sucesso!');
     } catch {

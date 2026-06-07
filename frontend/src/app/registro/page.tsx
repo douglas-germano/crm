@@ -31,7 +31,7 @@ export default function RegistroPage() {
 
     try {
       // Chama a nova API criada para provisionamento de tenants
-      await api.post('/api/tenants/registro', {
+      await api.post('/api/v1/core/tenants/registro', {
         nome_empresa: nomeEmpresa,
         workspace: workspace,
         nome_admin: nomeAdmin,

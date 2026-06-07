@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.core.blueprints.usuarios import usuarios_bp
 
-usuarios_bp = Blueprint('usuarios', __name__)
-
-from app.blueprints.usuarios import routes 
+__all__ = ["usuarios_bp"]

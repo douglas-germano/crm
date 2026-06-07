@@ -37,7 +37,7 @@ function RedefinirForm() {
     setIsSubmitting(true);
 
     try {
-      const resp = await api.post('/api/usuarios/redefinir-senha', {
+      const resp = await api.post('/api/v1/core/usuarios/redefinir-senha', {
         token, nova_senha: senha
       });
       setSuccess(true);

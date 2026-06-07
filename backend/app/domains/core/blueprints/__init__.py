@@ -1,0 +1,16 @@
+"""Core blueprint exports."""
+
+from app.domains.core.blueprints.admin import admin_bp
+from app.domains.core.blueprints.tenants import tenants_bp
+from app.domains.core.blueprints.usuarios import usuarios_bp
+from app.domains.core.blueprints.webhook import webhook_bp
+from app.domains.types import BlueprintRegistration
+
+CORE_BLUEPRINTS = (
+    BlueprintRegistration(usuarios_bp, "/api/v1/core/usuarios", "core"),
+    BlueprintRegistration(tenants_bp, "/api/v1/core/tenants", "core"),
+    BlueprintRegistration(admin_bp, "/api/v1/core/admin", "core"),
+    BlueprintRegistration(webhook_bp, "/api/v1/core/webhook", "core"),
+)
+
+__all__ = ["CORE_BLUEPRINTS", "usuarios_bp", "tenants_bp", "admin_bp", "webhook_bp"]

@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.core.blueprints.admin import admin_bp
 
-admin_bp = Blueprint('admin', __name__)
-
-from . import routes
+__all__ = ["admin_bp"]

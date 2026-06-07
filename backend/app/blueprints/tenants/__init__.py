@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.core.blueprints.tenants import tenants_bp
 
-tenants_bp = Blueprint('tenants', __name__)
-
-from app.blueprints.tenants import routes
+__all__ = ["tenants_bp"]

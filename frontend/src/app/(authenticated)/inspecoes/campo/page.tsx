@@ -38,14 +38,14 @@ export default function InspecaoCampoPage() {
       try {
         setLoading(true);
         // Buscar detalhes da inspeção
-        const resInspecao = await api.get(`/api/inspecoes/${inspecaoId}`);
+        const resInspecao = await api.get(`/api/v1/inspect/inspecoes/${inspecaoId}`);
         const dataInspecao: Inspecao = resInspecao.data;
         setInspecao(dataInspecao);
         setObservacoesGerais(dataInspecao.observacoes_gerais || '');
         setArtNumero(dataInspecao.art_numero || '');
 
         // Buscar o template do checklist associado diretamente pelo ID
-        const resTemplate = await api.get(`/api/inspecoes/templates/${dataInspecao.template_id}`);
+        const resTemplate = await api.get(`/api/v1/inspect/inspecoes/templates/${dataInspecao.template_id}`);
         const currentTemplate: TemplateChecklist = resTemplate.data;
         setTemplate(currentTemplate);
 
@@ -132,7 +132,7 @@ export default function InspecaoCampoPage() {
         art_numero: artNumero
       };
 
-      await api.put(`/api/inspecoes/${inspecaoId}/campo`, payload);
+      await api.put(`/api/v1/inspect/inspecoes/${inspecaoId}/campo`, payload);
       setSucesso(true);
     } catch {
       // erro de rede — o botão fica habilitado novamente para nova tentativa
@@ -144,7 +144,7 @@ export default function InspecaoCampoPage() {
   const baixarPdfLaudo = async () => {
     try {
       const token = localStorage.getItem('token');
-      const url = `${api.defaults.baseURL}/api/inspecoes/${inspecaoId}/pdf`;
+      const url = `${api.defaults.baseURL}/api/v1/inspect/inspecoes/${inspecaoId}/pdf`;
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });

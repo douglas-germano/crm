@@ -38,18 +38,18 @@ Flask application factory in `app/__init__.py`. Blueprints are registered under 
 **Blueprint URL prefixes** (`/api/<resource>`):
 | Blueprint | Prefix | Domain |
 |-----------|--------|--------|
-| `usuarios` | `/api/usuarios` | Auth, user accounts |
-| `tenants` | `/api/tenants` | Tenant provisioning |
-| `leads` | `/api/leads` | Lead management |
-| `empresas` | `/api/empresas` | Company records |
-| `negocios` | `/api/negocios` | Deals/opportunities |
-| `pipelines` | `/api/pipelines` | Pipeline & stage config |
-| `servicos` | `/api/servicos` | Service catalog |
-| `projetos` | `/api/projetos` | Project management |
-| `ativos` | `/api/ativos` | Asset tracking |
-| `inspecoes` | `/api/inspecoes` | Inspection workflows |
-| `dashboard` | `/api/dashboard` | Analytics & summaries |
-| `admin` | `/api/admin` | Admin operations |
+| `usuarios` | `/api/v1/core/usuarios` | Auth, user accounts |
+| `tenants` | `/api/v1/core/tenants` | Tenant provisioning |
+| `leads` | `/api/v1/crm/leads` | Lead management |
+| `empresas` | `/api/v1/crm/empresas` | Company records |
+| `negocios` | `/api/v1/crm/negocios` | Deals/opportunities |
+| `pipelines` | `/api/v1/crm/pipelines` | Pipeline & stage config |
+| `servicos` | `/api/v1/crm/servicos` | Service catalog |
+| `projetos` | `/api/v1/crm/projetos` | Project management |
+| `ativos` | `/api/v1/inspect/ativos` | Asset tracking |
+| `inspecoes` | `/api/v1/inspect/inspecoes` | Inspection workflows |
+| `dashboard` | `/api/v1/crm/dashboard` | Analytics & summaries |
+| `admin` | `/api/v1/core/admin` | Admin operations |
 
 **Models** (`app/models/`): All exported from `app/models/__init__.py`. Key relationships:
 - `Lead` → belongs to `Empresa`

@@ -28,7 +28,7 @@ export default function MobileNegociosPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<Filter>('todos');
 
-  const { data: raw, isLoading } = useSWR('/api/negocios', fetcher);
+  const { data: raw, isLoading } = useSWR('/api/v1/crm/negocios', fetcher);
   const all: Negocio[] = Array.isArray(raw) ? raw : [];
 
   const negocios = all.filter((n) => {

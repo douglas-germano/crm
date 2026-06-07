@@ -18,6 +18,7 @@ import {
   ClipboardCheck,
   ShieldCheck,
   Calendar,
+  ClipboardList,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -55,8 +56,9 @@ const navSections = [
     ],
   },
   {
-    label: 'Inspeções',
+    label: 'Apex Inspect',
     links: [
+      { href: '/inspect/ordens', label: 'Ordens de Campo',  icon: ClipboardList  },
       { href: '/contratos-amc',  label: 'Contratos AMC',     icon: ShieldCheck    },
       { href: '/portal-cliente', label: 'Portal do Cliente', icon: ClipboardCheck },
     ],

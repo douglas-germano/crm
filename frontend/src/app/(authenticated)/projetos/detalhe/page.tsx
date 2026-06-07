@@ -152,14 +152,14 @@ export default function ProjetoDetalhePage() {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
 
   const { data: projeto, mutate, isLoading } = useSWR<Projeto>(
-    projetoId ? `/api/projetos/${projetoId}` : null,
+    projetoId ? `/api/v1/crm/projetos/${projetoId}` : null,
     fetcher
   )
 
-  const { data: usuariosData } = useSWR('/api/usuarios', fetcher)
+  const { data: usuariosData } = useSWR('/api/v1/core/usuarios', fetcher)
   const usuarios = usuariosData?.usuarios ?? usuariosData ?? []
 
-  const { data: negocios = [] } = useSWR('/api/negocios', fetcher)
+  const { data: negocios = [] } = useSWR('/api/v1/crm/negocios', fetcher)
 
   const tarefas = projeto?.tarefas || []
 
@@ -170,7 +170,7 @@ export default function ProjetoDetalhePage() {
   // --- Project actions ---
   const handleChangeStatus = async (newStatus: string) => {
     try {
-      await api.put(`/api/projetos/${projetoId}`, { status: newStatus })
+      await api.put(`/api/v1/crm/projetos/${projetoId}`, { status: newStatus })
       mutate()
     } catch {
       // silently fail
@@ -203,7 +203,7 @@ export default function ProjetoDetalhePage() {
     setLoading(true)
     setApiError('')
     try {
-      await api.put(`/api/projetos/${projetoId}`, {
+      await api.put(`/api/v1/crm/projetos/${projetoId}`, {
         ...projetoForm,
         valor_contrato: projetoForm.valor_contrato ? Number(projetoForm.valor_contrato) : 0,
         gerente_id: projetoForm.gerente_id ? Number(projetoForm.gerente_id) : null,
@@ -232,7 +232,7 @@ export default function ProjetoDetalhePage() {
         ...tarefaForm,
         responsavel_id: tarefaForm.responsavel_id ? Number(tarefaForm.responsavel_id) : undefined,
       }
-      await api.post(`/api/projetos/${projetoId}/tarefas`, payload)
+      await api.post(`/api/v1/crm/projetos/${projetoId}/tarefas`, payload)
       setTarefaForm({ ...EMPTY_TAREFA_FORM })
       setShowTarefaModal(false)
       setEditingTarefa(null)
@@ -255,7 +255,7 @@ export default function ProjetoDetalhePage() {
         ...tarefaForm,
         responsavel_id: tarefaForm.responsavel_id ? Number(tarefaForm.responsavel_id) : null,
       }
-      await api.put(`/api/projetos/${projetoId}/tarefas/${editingTarefa.id}`, payload)
+      await api.put(`/api/v1/crm/projetos/${projetoId}/tarefas/${editingTarefa.id}`, payload)
       setTarefaForm({ ...EMPTY_TAREFA_FORM })
       setShowTarefaModal(false)
       setEditingTarefa(null)
@@ -270,7 +270,7 @@ export default function ProjetoDetalhePage() {
 
   const handleDeleteTarefa = async (tarefaId: number) => {
     try {
-      await api.delete(`/api/projetos/${projetoId}/tarefas/${tarefaId}`)
+      await api.delete(`/api/v1/crm/projetos/${projetoId}/tarefas/${tarefaId}`)
       mutate()
     } catch {
       // silently fail
@@ -332,7 +332,7 @@ export default function ProjetoDetalhePage() {
     mutate({ ...projeto!, tarefas: updatedTarefas }, false)
 
     try {
-      await api.put(`/api/projetos/${projetoId}/tarefas/${draggedTask.id}`, {
+      await api.put(`/api/v1/crm/projetos/${projetoId}/tarefas/${draggedTask.id}`, {
         status: newStatus,
       })
       mutate()

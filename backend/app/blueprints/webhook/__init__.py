@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.core.blueprints.webhook import webhook_bp
 
-webhook_bp = Blueprint('webhook', __name__)
-
-from . import routes
+__all__ = ["webhook_bp"]

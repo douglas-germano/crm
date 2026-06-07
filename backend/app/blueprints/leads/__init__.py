@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.crm.blueprints.leads import leads_bp
 
-leads_bp = Blueprint('leads', __name__)
-
-from app.blueprints.leads import routes 
+__all__ = ["leads_bp"]

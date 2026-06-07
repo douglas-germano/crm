@@ -37,7 +37,7 @@ export default function AdminPage() {
 
   const carregarTenants = async () => {
     try {
-      const resp = await api.get('/api/admin/tenants');
+      const resp = await api.get('/api/v1/core/admin/tenants');
       setTenants(resp.data.tenants);
     } catch {
       setError('Acesso Negado: Apenas a matriz operacional possui poderes Super Admin.');
@@ -53,7 +53,7 @@ export default function AdminPage() {
     setInspectError('');
 
     try {
-      const resp = await api.get(`/api/admin/tenants/${tId}/${recurso}`);
+      const resp = await api.get(`/api/v1/core/admin/tenants/${tId}/${recurso}`);
       setTenantData(resp.data.dados);
     } catch {
       setInspectError('Falha ao extrair dados internos do tenant.');

@@ -66,20 +66,20 @@ export default function PipelinePage() {
   const [dropTarget, setDropTarget] = useState<{ estagioId: number; index: number } | null>(null)
   const [actionError, setActionError] = useState('')
 
-  const { data: pipelinesData, isLoading: loadingPipelines } = useSWR('/api/pipelines', fetcher)
+  const { data: pipelinesData, isLoading: loadingPipelines } = useSWR('/api/v1/crm/pipelines', fetcher)
   const pipelines = pipelinesData?.pipelines ?? pipelinesData ?? []
 
   const activePipelineId = selectedPipeline ?? (pipelines.length > 0 ? pipelines[0]?.id : null)
 
   const { data: boardData, mutate: mutateBoard, isLoading: loadingBoard } = useSWR(
-    activePipelineId ? `/api/pipelines/${activePipelineId}/leads` : null,
+    activePipelineId ? `/api/v1/crm/pipelines/${activePipelineId}/leads` : null,
     fetcher
   )
 
   const leadsPorEstagio: LeadsPorEstagio[] = boardData?.leads_por_estagio ?? []
 
   const { data: leadsData } = useSWR(
-    showAddModal ? `/api/leads?per_page=100` : null,
+    showAddModal ? `/api/v1/crm/leads?per_page=100` : null,
     fetcher
   )
   const allLeads: Lead[] = leadsData?.leads ?? []
@@ -112,7 +112,7 @@ export default function PipelinePage() {
   const moveLead = async (leadId: number, estagioId: number, posicao?: number) => {
     setActionError('')
     try {
-      await api.post(`/api/pipelines/leads/${leadId}/mover`, {
+      await api.post(`/api/v1/crm/pipelines/leads/${leadId}/mover`, {
         estagio_id: estagioId,
         posicao: posicao ?? getColumnLeads(estagioId).length
       })
@@ -186,7 +186,7 @@ export default function PipelinePage() {
     setAddingLead(true)
     setActionError('')
     try {
-      await api.post(`/api/pipelines/leads/${selectedLeadId}/mover`, {
+      await api.post(`/api/v1/crm/pipelines/leads/${selectedLeadId}/mover`, {
         estagio_id: selectedEstagioId,
         posicao: getColumnLeads(selectedEstagioId).length
       })

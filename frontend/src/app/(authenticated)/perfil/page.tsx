@@ -96,10 +96,10 @@ export default function PerfilPage() {
   const [regeneratingId, setRegeneratingId] = useState<number | null>(null)
 
   const { data: webhookConfig, mutate: mutateWebhook } = useSWR(
-    isAdmin ? '/api/webhook/config' : null, fetcher
+    isAdmin ? '/api/v1/core/webhook/config' : null, fetcher
   )
   const { data: integracoesData, mutate: mutateIntegracoes } = useSWR(
-    isAdmin ? '/api/webhook/integracoes' : null, fetcher
+    isAdmin ? '/api/v1/core/webhook/integracoes' : null, fetcher
   )
   const webhookUrl: string = webhookConfig?.webhook_url ?? ''
   const integracoes: IntegracaoItem[] = integracoesData?.integracoes ?? []
@@ -123,7 +123,7 @@ export default function PerfilPage() {
     if (!integracaoForm.nome.trim()) { setIntegracaoError('Nome é obrigatório'); return }
     setIntegracaoLoading(true); setIntegracaoError('')
     try {
-      await api.post('/api/webhook/integracoes', integracaoForm)
+      await api.post('/api/v1/core/webhook/integracoes', integracaoForm)
       setShowIntegracaoModal(false)
       setIntegracaoForm({ nome: '', origem_padrao: '', descricao: '' })
       mutateIntegracoes()
@@ -137,7 +137,7 @@ export default function PerfilPage() {
     if (!deletingIntegracao) return
     setIntegracaoLoading(true)
     try {
-      await api.delete(`/api/webhook/integracoes/${deletingIntegracao.id}`)
+      await api.delete(`/api/v1/core/webhook/integracoes/${deletingIntegracao.id}`)
       setDeletingIntegracao(null)
       mutateIntegracoes()
     } catch { /* silencioso */ }
@@ -147,7 +147,7 @@ export default function PerfilPage() {
   const handleRegenerateToken = async (id: number) => {
     setRegeneratingId(id)
     try {
-      await api.post(`/api/webhook/integracoes/${id}/token`)
+      await api.post(`/api/v1/core/webhook/integracoes/${id}/token`)
       mutateIntegracoes()
       setVisibleTokens(prev => { const s = new Set(prev); s.delete(id); return s })
     } catch { /* silencioso */ }
@@ -164,9 +164,9 @@ export default function PerfilPage() {
   const [usuarioForm, setUsuarioForm] = useState({ nome: '', email: '', senha: '', perfil_id: '' })
 
   const { data: usuariosData, mutate: mutateUsuarios, isLoading: usuariosLoading } = useSWR(
-    isAdmin ? '/api/usuarios' : null, fetcher
+    isAdmin ? '/api/v1/core/usuarios' : null, fetcher
   )
-  const { data: perfisData } = useSWR(isAdmin ? '/api/usuarios/perfis' : null, fetcher)
+  const { data: perfisData } = useSWR(isAdmin ? '/api/v1/core/usuarios/perfis' : null, fetcher)
 
   interface UsuarioItem { id: number; nome: string; email: string; perfil?: { nome: string }; ativo: boolean; ultimo_login: string }
   interface PerfilItem { id: number; nome: string }
@@ -174,7 +174,7 @@ export default function PerfilPage() {
   const perfis: PerfilItem[] = perfisData?.perfis ?? []
 
   const { data: pipelinesData, mutate: mutatePipelines, isLoading: pipelinesLoading } = useSWR(
-    isAdmin ? '/api/pipelines' : null, fetcher
+    isAdmin ? '/api/v1/crm/pipelines' : null, fetcher
   )
   const pipelines: PipelineItem[] = pipelinesData?.pipelines ?? []
 
@@ -197,9 +197,9 @@ export default function PerfilPage() {
     setPipelineLoading(true); setPipelineError('')
     try {
       if (editingPipeline) {
-        await api.put(`/api/pipelines/${editingPipeline.id}`, pipelineForm)
+        await api.put(`/api/v1/crm/pipelines/${editingPipeline.id}`, pipelineForm)
       } else {
-        await api.post('/api/pipelines', { ...pipelineForm, criar_estagios_padrao: false })
+        await api.post('/api/v1/crm/pipelines', { ...pipelineForm, criar_estagios_padrao: false })
       }
       setShowPipelineModal(false)
       mutatePipelines()
@@ -212,7 +212,7 @@ export default function PerfilPage() {
     if (!deletingPipeline) return
     setPipelineLoading(true)
     try {
-      await api.delete(`/api/pipelines/${deletingPipeline.id}`)
+      await api.delete(`/api/v1/crm/pipelines/${deletingPipeline.id}`)
       setShowDeletePipelineModal(false)
       setDeletingPipeline(null)
       if (expandedPipeline === deletingPipeline.id) setExpandedPipeline(null)
@@ -244,9 +244,9 @@ export default function PerfilPage() {
     setEstagioLoading(true); setEstagioError('')
     try {
       if (editingEstagio) {
-        await api.put(`/api/pipelines/estagios/${editingEstagio.id}`, estagioForm)
+        await api.put(`/api/v1/crm/pipelines/estagios/${editingEstagio.id}`, estagioForm)
       } else {
-        await api.post(`/api/pipelines/${estagioTargetPipelineId}/estagios`, estagioForm)
+        await api.post(`/api/v1/crm/pipelines/${estagioTargetPipelineId}/estagios`, estagioForm)
       }
       setShowEstagioModal(false)
       mutatePipelines()
@@ -259,7 +259,7 @@ export default function PerfilPage() {
     if (!deletingEstagio) return
     setEstagioLoading(true)
     try {
-      await api.delete(`/api/pipelines/estagios/${deletingEstagio.id}`)
+      await api.delete(`/api/v1/crm/pipelines/estagios/${deletingEstagio.id}`)
       setShowDeleteEstagioModal(false)
       setDeletingEstagio(null)
       mutatePipelines()
@@ -274,7 +274,7 @@ export default function PerfilPage() {
     if (!usuarioForm.perfil_id) { setUsuarioApiError('Selecione um perfil'); return }
     setUsuarioLoading(true); setUsuarioApiError('')
     try {
-      await api.post('/api/usuarios', { ...usuarioForm, perfil_id: Number(usuarioForm.perfil_id) })
+      await api.post('/api/v1/core/usuarios', { ...usuarioForm, perfil_id: Number(usuarioForm.perfil_id) })
       setUsuarioForm({ nome: '', email: '', senha: '', perfil_id: '' })
       setShowUsuarioModal(false)
       mutateUsuarios()
@@ -310,7 +310,7 @@ export default function PerfilPage() {
     if (!validateProfileForm()) return
     setLoading(true)
     try {
-      await api.put('/api/usuarios/perfil', form)
+      await api.put('/api/v1/core/usuarios/perfil', form)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err: unknown) {
@@ -346,7 +346,7 @@ export default function PerfilPage() {
     if (!validateSenhaForm()) return
     setSenhaLoading(true)
     try {
-      await api.put('/api/usuarios/senha', {
+      await api.put('/api/v1/core/usuarios/senha', {
         senha_atual: senhaForm.senha_atual,
         nova_senha: senhaForm.nova_senha,
       })

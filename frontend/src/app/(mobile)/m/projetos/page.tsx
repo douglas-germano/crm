@@ -48,7 +48,7 @@ export default function MobileProjetosPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<Filter>('todos');
 
-  const { data: raw, isLoading } = useSWR('/api/projetos', fetcher);
+  const { data: raw, isLoading } = useSWR('/api/v1/crm/projetos', fetcher);
   const all: Projeto[] = Array.isArray(raw) ? raw : [];
 
   const projetos = all.filter((p) => {

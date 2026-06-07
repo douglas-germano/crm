@@ -30,7 +30,7 @@ export default function EsqueciSenhaPage() {
     setIsSubmitting(true);
 
     try {
-      const resp = await api.post('/api/usuarios/esqueci-senha', {
+      const resp = await api.post('/api/v1/core/usuarios/esqueci-senha', {
         email, workspace
       });
       setMsg(resp.data.mensagem);

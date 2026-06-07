@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         return;
       }
-      const response = await api.get('/api/usuarios/perfil');
+      const response = await api.get('/api/v1/core/usuarios/perfil');
       const u: Usuario = response.data;
       setUser(u);
       identifyUser(String(u.id), {
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadUser]);
 
   const login = async (email: string, senha: string, workspace: string) => {
-    const response = await api.post('/api/usuarios/login', { email, senha, workspace });
+    const response = await api.post('/api/v1/core/usuarios/login', { email, senha, workspace });
     const { access_token, refresh_token, usuario } = response.data;
     localStorage.setItem('token', access_token);
     localStorage.setItem('refresh_token', refresh_token);
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await api.post('/api/usuarios/logout');
+      await api.post('/api/v1/core/usuarios/logout');
     } catch {
       // ignore
     }

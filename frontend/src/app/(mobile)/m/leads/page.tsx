@@ -35,7 +35,7 @@ export default function MobileLeadsPage() {
   if (status !== 'todos') params.set('status', status);
   if (search) params.set('search', search);
 
-  const { data, isLoading } = useSWR<{ leads: Lead[] }>(`/api/leads?${params}`, fetcher);
+  const { data, isLoading } = useSWR<{ leads: Lead[] }>(`/api/v1/crm/leads?${params}`, fetcher);
   const leads: Lead[] = data?.leads ?? [];
 
   return (

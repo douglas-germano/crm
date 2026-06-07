@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.inspect.blueprints.ativos import ativos_bp
 
-ativos_bp = Blueprint('ativos', __name__)
-
-from app.blueprints.ativos import routes
+__all__ = ["ativos_bp"]

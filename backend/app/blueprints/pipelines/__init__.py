@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.crm.blueprints.pipelines import pipelines_bp
 
-pipelines_bp = Blueprint('pipelines', __name__)
-
-from app.blueprints.pipelines import routes 
+__all__ = ["pipelines_bp"]

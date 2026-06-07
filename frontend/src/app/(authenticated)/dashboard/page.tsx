@@ -209,20 +209,20 @@ function StatCard({
 export default function DashboardPage() {
   // ---- Dashboard data ----
   const { data: stats, isLoading: loadingStats } = useSWR<DashboardStats>(
-    '/api/dashboard/stats',
+    '/api/v1/crm/dashboard/stats',
     fetcher,
   );
 
   const { data: funil, isLoading: loadingFunil } = useSWR<FunilData>(
-    '/api/dashboard/funil',
+    '/api/v1/crm/dashboard/funil',
     fetcher,
   );
 
   const isLoading = loadingStats || loadingFunil;
 
   // ---- Relatorios data ----
-  const { data: projStats } = useSWR('/api/projetos/estatisticas', fetcher);
-  const { data: negStats } = useSWR('/api/negocios/estatisticas', fetcher);
+  const { data: projStats } = useSWR('/api/v1/crm/projetos/estatisticas', fetcher);
+  const { data: negStats } = useSWR('/api/v1/crm/negocios/estatisticas', fetcher);
 
   const statusData = stats
     ? [
@@ -239,8 +239,8 @@ export default function DashboardPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0-indexed
 
-  const { data: negociosRaw, isLoading: loadingNeg } = useSWR('/api/negocios', fetcher);
-  const { data: projetosRaw, isLoading: loadingProj } = useSWR('/api/projetos', fetcher);
+  const { data: negociosRaw, isLoading: loadingNeg } = useSWR('/api/v1/crm/negocios', fetcher);
+  const { data: projetosRaw, isLoading: loadingProj } = useSWR('/api/v1/crm/projetos', fetcher);
 
   const negocios: Array<{ id: number; nome: string }> = Array.isArray(negociosRaw) ? negociosRaw : [];
   const projetos: Array<{ id: number; nome: string; data_inicio?: string; data_previsao_fim?: string; data_fim?: string; status: string }> =
@@ -253,7 +253,7 @@ export default function DashboardPage() {
       const results = await Promise.all(
         negocioIds.map((id) =>
           api
-            .get(`/api/negocios/${id}/atividades`)
+            .get(`/api/v1/crm/negocios/${id}/atividades`)
             .then((r) => ({
               negocioId: id,
               negocioNome: negocios.find((n) => n.id === id)?.nome ?? '',

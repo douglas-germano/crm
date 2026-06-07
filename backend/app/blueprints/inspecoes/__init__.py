@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.inspect.blueprints.inspecoes import inspecoes_bp
 
-inspecoes_bp = Blueprint('inspecoes', __name__)
-
-from app.blueprints.inspecoes import routes
+__all__ = ["inspecoes_bp"]

@@ -44,8 +44,8 @@ export default function CalendarioPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0-indexed
 
-  const { data: negociosRaw, isLoading: loadingNeg } = useSWR('/api/negocios', fetcher);
-  const { data: projetosRaw, isLoading: loadingProj } = useSWR('/api/projetos', fetcher);
+  const { data: negociosRaw, isLoading: loadingNeg } = useSWR('/api/v1/crm/negocios', fetcher);
+  const { data: projetosRaw, isLoading: loadingProj } = useSWR('/api/v1/crm/projetos', fetcher);
 
   const negocios: Array<{ id: number; nome: string }> = Array.isArray(negociosRaw) ? negociosRaw : [];
   const projetos: Array<{ id: number; nome: string; data_inicio?: string; data_previsao_fim?: string; data_fim?: string; status: string }> =
@@ -58,7 +58,7 @@ export default function CalendarioPage() {
     async () => {
       const results = await Promise.all(
         negocioIds.map(id =>
-          api.get(`/api/negocios/${id}/atividades`).then(r => ({
+          api.get(`/api/v1/crm/negocios/${id}/atividades`).then(r => ({
             negocioId: id,
             negocioNome: negocios.find(n => n.id === id)?.nome ?? '',
             atividades: Array.isArray(r.data) ? r.data : [],

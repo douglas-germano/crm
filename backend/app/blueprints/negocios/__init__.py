@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.crm.blueprints.negocios import negocios_bp
 
-negocios_bp = Blueprint('negocios', __name__)
-
-from app.blueprints.negocios import routes 
+__all__ = ["negocios_bp"]

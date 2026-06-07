@@ -129,17 +129,17 @@ export default function NegociosPage() {
   if (statusFilter) params.set('status', statusFilter)
 
   const { data: negociosRaw = [], mutate, isLoading } = useSWR(
-    `/api/negocios${params.toString() ? '?' + params : ''}`,
+    `/api/v1/crm/negocios${params.toString() ? '?' + params : ''}`,
     fetcher
   )
 
-  const { data: leadsData } = useSWR('/api/leads?per_page=100', fetcher)
-  const { data: pipelinesData } = useSWR('/api/pipelines', fetcher)
-  const { data: servicos = [] } = useSWR('/api/servicos', fetcher)
+  const { data: leadsData } = useSWR('/api/v1/crm/leads?per_page=100', fetcher)
+  const { data: pipelinesData } = useSWR('/api/v1/crm/pipelines', fetcher)
+  const { data: servicos = [] } = useSWR('/api/v1/crm/servicos', fetcher)
 
   // Atividades SWR — key is null when no negocio selected
   const { data: atividadesRaw = [], mutate: mutateAtividades, isLoading: atividadesLoading } = useSWR(
-    selectedNegocio ? `/api/negocios/${selectedNegocio.id}/atividades` : null,
+    selectedNegocio ? `/api/v1/crm/negocios/${selectedNegocio.id}/atividades` : null,
     fetcher
   )
   const atividades: AtividadeNegocio[] = Array.isArray(atividadesRaw) ? atividadesRaw : []
@@ -155,7 +155,7 @@ export default function NegociosPage() {
   const [tabShowDeleteModal, setTabShowDeleteModal] = useState(false)
 
   const { data: tabAtivRaw = [], mutate: mutateTabAtiv, isLoading: tabAtivIsLoading } = useSWR(
-    tabNegId ? `/api/negocios/${tabNegId}/atividades` : null, fetcher
+    tabNegId ? `/api/v1/crm/negocios/${tabNegId}/atividades` : null, fetcher
   )
   const tabAtividades: AtividadeNegocio[] = Array.isArray(tabAtivRaw) ? tabAtivRaw : []
 
@@ -170,8 +170,8 @@ export default function NegociosPage() {
     if (!tabAtivForm.titulo.trim() || !tabAtivForm.data_agendada) { setTabAtivError('Título e data são obrigatórios'); return }
     setTabAtivLoadingState(true); setTabAtivError('')
     try {
-      if (tabEditingId) { await api.put(`/api/negocios/${tabNegId}/atividades/${tabEditingId}`, tabAtivForm); toast('Atividade atualizada!') }
-      else { await api.post(`/api/negocios/${tabNegId}/atividades`, tabAtivForm); toast('Atividade criada!') }
+      if (tabEditingId) { await api.put(`/api/v1/crm/negocios/${tabNegId}/atividades/${tabEditingId}`, tabAtivForm); toast('Atividade atualizada!') }
+      else { await api.post(`/api/v1/crm/negocios/${tabNegId}/atividades`, tabAtivForm); toast('Atividade criada!') }
       setTabShowModal(false); mutateTabAtiv()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { erro?: string } } }
@@ -182,7 +182,7 @@ export default function NegociosPage() {
     if (!tabDeletingAtiv || !tabNegId) return
     setTabAtivLoadingState(true)
     try {
-      await api.delete(`/api/negocios/${tabNegId}/atividades/${tabDeletingAtiv.id}`)
+      await api.delete(`/api/v1/crm/negocios/${tabNegId}/atividades/${tabDeletingAtiv.id}`)
       setTabShowDeleteModal(false); setTabDeletingAtiv(null); mutateTabAtiv(); toast('Atividade removida.', 'info')
     } catch { toast('Erro ao remover atividade.', 'error') }
     finally { setTabAtivLoadingState(false) }
@@ -235,7 +235,7 @@ export default function NegociosPage() {
     if (!validateForm()) return
     setLoading(true)
     try {
-      await api.post('/api/negocios', buildPayload())
+      await api.post('/api/v1/crm/negocios', buildPayload())
       setForm({ ...EMPTY_FORM })
       setFormErrors({})
       setShowCreateModal(false)
@@ -256,7 +256,7 @@ export default function NegociosPage() {
     if (!editingId) return
     setLoading(true)
     try {
-      await api.put(`/api/negocios/${editingId}`, buildPayload())
+      await api.put(`/api/v1/crm/negocios/${editingId}`, buildPayload())
       setForm({ ...EMPTY_FORM })
       setFormErrors({})
       setShowEditModal(false)
@@ -276,7 +276,7 @@ export default function NegociosPage() {
     setLoading(true)
     setApiError('')
     try {
-      await api.delete(`/api/negocios/${deletingNegocio.id}`)
+      await api.delete(`/api/v1/crm/negocios/${deletingNegocio.id}`)
       setShowDeleteModal(false)
       setDeletingNegocio(null)
       mutate()
@@ -368,10 +368,10 @@ export default function NegociosPage() {
     }
     try {
       if (editingAtividadeId) {
-        await api.put(`/api/negocios/${selectedNegocio.id}/atividades/${editingAtividadeId}`, payload)
+        await api.put(`/api/v1/crm/negocios/${selectedNegocio.id}/atividades/${editingAtividadeId}`, payload)
         toast('Atividade atualizada!')
       } else {
-        await api.post(`/api/negocios/${selectedNegocio.id}/atividades`, payload)
+        await api.post(`/api/v1/crm/negocios/${selectedNegocio.id}/atividades`, payload)
         toast('Atividade criada!')
       }
       setShowAtividadeModal(false)
@@ -389,7 +389,7 @@ export default function NegociosPage() {
     if (!selectedNegocio || !deletingAtividade) return
     setAtividadeLoading(true)
     try {
-      await api.delete(`/api/negocios/${selectedNegocio.id}/atividades/${deletingAtividade.id}`)
+      await api.delete(`/api/v1/crm/negocios/${selectedNegocio.id}/atividades/${deletingAtividade.id}`)
       setShowDeleteAtividadeModal(false)
       setDeletingAtividade(null)
       mutateAtividades()

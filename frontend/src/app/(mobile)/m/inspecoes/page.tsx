@@ -35,7 +35,7 @@ export default function MobileInspecoesPage() {
 
   const statusParam = FILTERS.find((f) => f.key === filter)?.param ?? 'agendada,em_campo';
   const { data: raw, isLoading } = useSWR(
-    `/api/inspecoes?status=${statusParam}&per_page=30`,
+    `/api/v1/inspect/inspecoes?status=${statusParam}&per_page=30`,
     fetcher
   );
   const inspecoes: Inspecao[] = Array.isArray(raw)

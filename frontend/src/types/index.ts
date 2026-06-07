@@ -288,3 +288,139 @@ export interface Inspecao {
   data_atualizacao: string;
 }
 
+export interface ExecucaoCampo {
+  id: number;
+  uuid: string;
+  status: 'em_andamento' | 'pausada' | 'concluida' | 'cancelada';
+  data_inicio?: string;
+  data_fim?: string;
+  checklist_snapshot?: Record<string, any>;
+  respostas?: Record<string, any>[];
+  observacoes?: string;
+  latitude_inicio?: number;
+  longitude_inicio?: number;
+  latitude_fim?: number;
+  longitude_fim?: number;
+  ordem_servico_id: number;
+  executor_id?: number;
+  executor_nome?: string;
+  data_criacao: string;
+  data_atualizacao: string;
+}
+
+export interface EvidenciaCampo {
+  id: number;
+  uuid: string;
+  tipo: 'foto' | 'video' | 'documento' | 'audio' | string;
+  url: string;
+  legenda?: string;
+  origem?: string;
+  item_referencia?: string;
+  latitude?: number;
+  longitude?: number;
+  metadados?: Record<string, any>;
+  ordem_servico_id: number;
+  execucao_id?: number;
+  criado_por_id?: number;
+  criado_por_nome?: string;
+  data_criacao: string;
+}
+
+export interface ApontamentoHora {
+  id: number;
+  data_inicio: string;
+  data_fim?: string;
+  horas: number;
+  tipo: string;
+  descricao?: string;
+  ordem_servico_id: number;
+  usuario_id?: number;
+  usuario_nome?: string;
+  data_criacao: string;
+}
+
+export interface MaterialUtilizado {
+  id: number;
+  nome: string;
+  quantidade: number;
+  unidade: string;
+  valor_unitario: number;
+  valor_total: number;
+  observacao?: string;
+  ordem_servico_id: number;
+  registrado_por_id?: number;
+  registrado_por_nome?: string;
+  data_criacao: string;
+}
+
+export interface AssinaturaCampo {
+  id: number;
+  nome: string;
+  documento?: string;
+  cargo?: string;
+  tipo: 'cliente' | 'responsavel' | string;
+  assinatura_url?: string;
+  aceite_texto?: string;
+  latitude?: number;
+  longitude?: number;
+  ordem_servico_id: number;
+  usuario_id?: number;
+  usuario_nome?: string;
+  data_criacao: string;
+}
+
+export interface RelatorioTecnico {
+  id: number;
+  titulo: string;
+  status: 'rascunho' | 'emitido' | 'cancelado' | string;
+  conteudo?: Record<string, any>;
+  pdf_url?: string;
+  emitido_em?: string;
+  ordem_servico_id: number;
+  emitido_por_id?: number;
+  emitido_por_nome?: string;
+  data_criacao: string;
+  data_atualizacao: string;
+}
+
+export interface OrdemServico {
+  id: number;
+  uuid: string;
+  codigo?: string;
+  titulo: string;
+  tipo: 'inspecao' | 'manutencao' | 'servico' | 'visita_tecnica' | string;
+  status: 'rascunho' | 'planejada' | 'em_campo' | 'pausada' | 'concluida' | 'cancelada' | string;
+  prioridade: 'baixa' | 'normal' | 'alta' | 'critica' | string;
+  descricao?: string;
+  escopo?: Record<string, any>;
+  endereco_atendimento?: string;
+  latitude?: number;
+  longitude?: number;
+  data_agendada?: string;
+  data_inicio?: string;
+  data_fim?: string;
+  observacoes_internas?: string;
+  observacoes_cliente?: string;
+  empresa_id: number;
+  empresa_nome?: string;
+  ativo_id?: number;
+  ativo_nome?: string;
+  ativo_tag?: string;
+  contrato_amc_id?: number;
+  contrato_amc_titulo?: string;
+  projeto_id?: number;
+  projeto_nome?: string;
+  negocio_id?: number;
+  negocio_nome?: string;
+  responsavel_id?: number;
+  responsavel_nome?: string;
+  criado_por_id?: number;
+  data_criacao: string;
+  data_atualizacao: string;
+  execucoes?: ExecucaoCampo[];
+  evidencias?: EvidenciaCampo[];
+  apontamentos_hora?: ApontamentoHora[];
+  materiais?: MaterialUtilizado[];
+  assinaturas?: AssinaturaCampo[];
+  relatorios?: RelatorioTecnico[];
+}

@@ -43,36 +43,12 @@ def create_app(config_name=None):
     jwt.init_app(app)
     CORS(app, origins=app.config.get('CORS_ORIGINS', '*'))
 
-    # Registrar blueprints
-    from app.blueprints.usuarios import usuarios_bp
-    from app.blueprints.leads import leads_bp
-    from app.blueprints.pipelines import pipelines_bp
-    from app.blueprints.negocios import negocios_bp
-    from app.blueprints.empresas import empresas_bp
-    from app.blueprints.servicos import servicos_bp
-    from app.blueprints.dashboard import dashboard_bp
-    from app.blueprints.projetos import projetos_bp
-    from app.blueprints.tenants import tenants_bp
-    from app.blueprints.admin import admin_bp
-    from app.blueprints.ativos import ativos_bp
-    from app.blueprints.inspecoes import inspecoes_bp
-    from app.blueprints.webhook import webhook_bp
+    # Registrar blueprints por dominio no contrato versionado /api/v1.
+    from app.domains.registry import domain_endpoint_prefixes, register_domain_blueprints
 
-    app.register_blueprint(usuarios_bp, url_prefix='/api/usuarios')
-    app.register_blueprint(tenants_bp, url_prefix='/api/tenants')
-    app.register_blueprint(leads_bp, url_prefix='/api/leads')
-    app.register_blueprint(pipelines_bp, url_prefix='/api/pipelines')
-    app.register_blueprint(negocios_bp, url_prefix='/api/negocios')
-    app.register_blueprint(empresas_bp, url_prefix='/api/empresas')
-    app.register_blueprint(servicos_bp, url_prefix='/api/servicos')
-    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
-    app.register_blueprint(projetos_bp, url_prefix='/api/projetos')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
-    app.register_blueprint(ativos_bp, url_prefix='/api/ativos')
-    app.register_blueprint(inspecoes_bp, url_prefix='/api/inspecoes')
-    app.register_blueprint(webhook_bp, url_prefix='/api/webhook')
+    register_domain_blueprints(app)
 
-    @app.get('/api/health')
+    @app.get('/api/v1/health')
     def health_check():
         return {
             'status': 'ok',
@@ -86,11 +62,26 @@ def create_app(config_name=None):
 
     @app.before_request
     def set_tenant_schema():
-        exempt_endpoints = ['usuarios.login', 'usuarios.esqueci_senha', 'usuarios.redefinir_senha']
+        usuarios_endpoints = domain_endpoint_prefixes(['usuarios'])
+        tenants_endpoints = domain_endpoint_prefixes(['tenants'])
+        webhook_endpoints = domain_endpoint_prefixes(['webhook'])
+
+        exempt_endpoints = {
+            f'{prefix}.login' for prefix in usuarios_endpoints
+        } | {
+            f'{prefix}.esqueci_senha' for prefix in usuarios_endpoints
+        } | {
+            f'{prefix}.redefinir_senha' for prefix in usuarios_endpoints
+        }
+        exempt_prefixes = tuple(f'{prefix}.' for prefix in tenants_endpoints)
+        exempt_webhook_endpoints = {
+            f'{prefix}.receber_lead' for prefix in webhook_endpoints
+        }
+
         if request.endpoint:
             if (any(request.endpoint.startswith(ep) for ep in exempt_endpoints)
-                    or request.endpoint.startswith('tenants.')
-                    or request.endpoint in ('webhook.receber_lead',)):
+                    or request.endpoint.startswith(exempt_prefixes)
+                    or request.endpoint in exempt_webhook_endpoints):
                 return
 
         try:

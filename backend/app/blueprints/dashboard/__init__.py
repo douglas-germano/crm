@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.domains.crm.blueprints.dashboard import dashboard_bp
 
-dashboard_bp = Blueprint('dashboard', __name__)
-
-from app.blueprints.dashboard import routes
+__all__ = ["dashboard_bp"]
