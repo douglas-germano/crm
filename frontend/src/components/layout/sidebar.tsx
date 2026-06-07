@@ -21,6 +21,8 @@ import {
   ClipboardList,
   Grid2X2,
   FileText,
+  Box,
+  ClipboardSignature,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -77,7 +79,9 @@ const inspectNavSections = [
   {
     label: 'Gestão Técnica',
     links: [
+      { href: '/inspect/ativos', label: 'Ativos', icon: Box },
       { href: '/contratos-amc', label: 'Contratos AMC', icon: ShieldCheck },
+      { href: '/inspect/relatorios', label: 'Relatórios Técnicos', icon: ClipboardSignature },
       { href: '/portal-cliente', label: 'Portal do Cliente', icon: FileText },
     ],
   },

@@ -169,6 +169,31 @@ export interface Servico {
   data_criacao: string;
 }
 
+export interface Projeto {
+  id: number;
+  uuid: string;
+  nome: string;
+  descricao?: string;
+  status: 'planejamento' | 'em_andamento' | 'pausado' | 'concluido' | 'cancelado' | string;
+  prioridade: 'baixa' | 'media' | 'alta' | 'critica' | string;
+  data_inicio?: string;
+  data_previsao_fim?: string;
+  data_fim?: string;
+  valor_contrato: number;
+  percentual_concluido: number;
+  negocio_id?: number;
+  negocio_nome?: string;
+  empresa_id?: number;
+  empresa_nome?: string;
+  gerente_id?: number;
+  gerente_nome?: string;
+  criado_por_id?: number;
+  total_tarefas: number;
+  total_tarefas_concluidas: number;
+  data_criacao: string;
+  data_atualizacao: string;
+}
+
 export interface DashboardStats {
   total_leads: number;
   total_empresas: number;

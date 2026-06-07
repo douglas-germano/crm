@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
 import api from '@/lib/api';
 import { Ativo, Empresa, OrdemServico } from '@/types';
@@ -14,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ClipboardList, Loader2, MapPin, Play, Plus, Search, SquareCheckBig, Wrench } from 'lucide-react';
+import { ClipboardList, Eye, Loader2, MapPin, Play, Plus, Search, SquareCheckBig, Wrench } from 'lucide-react';
 
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
 
@@ -301,6 +302,12 @@ export default function OrdensCampoPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/inspect/ordens/detalhe?id=${ordem.id}`}>
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">Ver detalhes</span>
+                            </Link>
+                          </Button>
                           {ordem.status !== 'em_campo' && ordem.status !== 'concluida' && ordem.status !== 'cancelada' && (
                             <Button
                               variant="outline"
