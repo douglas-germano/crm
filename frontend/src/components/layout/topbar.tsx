@@ -18,6 +18,9 @@ const pageTitles: Record<string, string> = {
   '/usuarios':  'Usuários',
   '/perfil':    'Meu Perfil',
   '/inspect/ordens': 'Apex Inspect',
+  '/inspecoes/campo': 'Inspeção de Campo',
+  '/contratos-amc': 'Contratos AMC',
+  '/portal-cliente': 'Portal do Cliente',
 };
 
 function getPageTitle(pathname: string): string {

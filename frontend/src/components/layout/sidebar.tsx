@@ -20,6 +20,7 @@ import {
   Calendar,
   ClipboardList,
   Grid2X2,
+  FileText,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -38,7 +39,7 @@ import {
 // Nav sections (agrupadas semanticamente)
 // ---------------------------------------------------------------------------
 
-const navSections = [
+const crmNavSections = [
   {
     label: 'Vendas',
     links: [
@@ -57,11 +58,27 @@ const navSections = [
     ],
   },
   {
-    label: 'Apex Inspect',
+    label: 'Configuração',
     links: [
-      { href: '/inspect/ordens', label: 'Ordens de Campo',  icon: ClipboardList  },
-      { href: '/contratos-amc',  label: 'Contratos AMC',     icon: ShieldCheck    },
-      { href: '/portal-cliente', label: 'Portal do Cliente', icon: ClipboardCheck },
+      { href: '/modulos', label: 'Trocar Módulo', icon: Grid2X2 },
+      { href: '/perfil', label: 'Configurações', icon: Settings },
+    ],
+  },
+];
+
+const inspectNavSections = [
+  {
+    label: 'Campo',
+    links: [
+      { href: '/inspect/ordens', label: 'Ordens de Campo', icon: ClipboardList },
+      { href: '/inspecoes/campo', label: 'Inspeção de Campo', icon: ClipboardCheck },
+    ],
+  },
+  {
+    label: 'Gestão Técnica',
+    links: [
+      { href: '/contratos-amc', label: 'Contratos AMC', icon: ShieldCheck },
+      { href: '/portal-cliente', label: 'Portal do Cliente', icon: FileText },
     ],
   },
   {
@@ -161,8 +178,17 @@ export default function Sidebar() {
     }
   }, []);
 
+  const isInspectModule = (
+    pathname.startsWith('/inspect') ||
+    pathname.startsWith('/inspecoes') ||
+    pathname.startsWith('/contratos-amc') ||
+    pathname.startsWith('/portal-cliente')
+  );
+  const activeSections = isInspectModule ? inspectNavSections : crmNavSections;
+  const moduleName = isInspectModule ? 'INSPECT' : 'CRM';
+
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === '/admin' || href === '/perfil') return pathname === href;
+    if (href === '/dashboard' || href === '/admin' || href === '/perfil' || href === '/modulos') return pathname === href;
     return pathname.startsWith(href);
   };
 
@@ -226,7 +252,7 @@ export default function Sidebar() {
                 APEX
               </span>
               <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-steel-400 whitespace-nowrap">
-                CRM
+                {moduleName}
               </span>
             </div>
           </div>
@@ -276,7 +302,7 @@ export default function Sidebar() {
               ))}
             </div>
           ) : (
-            navSections.map((section) => (
+            activeSections.map((section) => (
               <div key={section.label}>
                 {/* Label de seção — só visível expandido */}
                 <p
