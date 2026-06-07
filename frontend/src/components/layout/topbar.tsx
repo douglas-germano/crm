@@ -22,6 +22,7 @@ const pageTitles: Record<string, string> = {
   '/inspecoes/campo': 'Inspeção de Campo',
   '/contratos-amc': 'Contratos AMC',
   '/portal-cliente': 'Portal do Cliente',
+  '/inspect/clientes': 'Inventário por Cliente',
   '/inspect/ativos': 'Ativos',
   '/inspect/relatorios': 'Relatórios Técnicos',
   '/relatorios': 'Relatórios',
