@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Calendar,
   ClipboardList,
+  Grid2X2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -66,6 +67,7 @@ const navSections = [
   {
     label: 'Configuração',
     links: [
+      { href: '/modulos', label: 'Trocar Módulo', icon: Grid2X2 },
       { href: '/perfil', label: 'Configurações', icon: Settings },
     ],
   },

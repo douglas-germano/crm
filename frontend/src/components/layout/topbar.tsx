@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useEffect, useState } from 'react';
 
 const pageTitles: Record<string, string> = {
+  '/modulos': 'Selecionar Módulo',
   '/dashboard': 'Dashboard',
   '/leads':     'Leads',
   '/pipeline':  'Pipeline',
@@ -16,6 +17,7 @@ const pageTitles: Record<string, string> = {
   '/empresas':  'Empresas',
   '/usuarios':  'Usuários',
   '/perfil':    'Meu Perfil',
+  '/inspect/ordens': 'Apex Inspect',
 };
 
 function getPageTitle(pathname: string): string {

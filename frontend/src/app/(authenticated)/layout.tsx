@@ -12,6 +12,15 @@ import Topbar from '@/components/layout/topbar';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();
+  const pathname = usePathname();
+
+  if (pathname === '/modulos') {
+    return (
+      <div className="min-h-screen bg-steel-50">
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">

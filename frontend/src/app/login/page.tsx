@@ -21,7 +21,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.push('/dashboard');
+      router.push('/modulos');
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -32,7 +32,7 @@ export default function LoginPage() {
 
     try {
       await login(email, senha, workspace);
-      router.push('/dashboard');
+      router.push('/modulos');
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { erro?: string } } };
       setError(
