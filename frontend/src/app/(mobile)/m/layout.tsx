@@ -10,6 +10,7 @@ const TITLES: Record<string, string> = {
   '/m/dashboard': 'Dashboard',
   '/m/leads': 'Leads',
   '/m/inspecoes': 'Inspeções',
+  '/m/inspecoes/campo': 'Inspeção de Campo',
   '/m/projetos': 'Projetos',
   '/m/negocios': 'Negócios',
 };
@@ -28,8 +29,8 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
+      <div className="flex h-screen items-center justify-center bg-steel-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-steel-200 border-t-brand-500" />
       </div>
     );
   }
@@ -44,12 +45,12 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
     .join('') ?? '?';
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-gray-50 overflow-hidden">
-      <header className="flex items-center justify-between px-4 h-14 bg-white border-b border-gray-200 shrink-0">
-        <span className="text-base font-semibold text-gray-900">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-steel-50">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-steel-200 bg-white px-4">
+        <span className="text-base font-semibold text-brand-900">
           {TITLES[pathname] ?? 'Apex CRM'}
         </span>
-        <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-xs font-semibold text-white">
           {initials}
         </div>
       </header>

@@ -13,30 +13,30 @@ import {
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
 
 const SHORTCUTS = [
-  { href: '/m/leads', label: 'Leads', icon: Users, bg: 'bg-blue-50', fg: 'text-blue-600' },
+  { href: '/m/leads', label: 'Leads', icon: Users, bg: 'bg-brand-500/10', fg: 'text-brand-600' },
   { href: '/m/negocios', label: 'Negócios', icon: Briefcase, bg: 'bg-emerald-50', fg: 'text-emerald-600' },
-  { href: '/m/inspecoes', label: 'Inspeções', icon: ClipboardCheck, bg: 'bg-orange-50', fg: 'text-orange-600' },
-  { href: '/m/projetos', label: 'Projetos', icon: FolderKanban, bg: 'bg-purple-50', fg: 'text-purple-600' },
+  { href: '/m/inspecoes', label: 'Inspeções', icon: ClipboardCheck, bg: 'bg-amber-50', fg: 'text-amber-700' },
+  { href: '/m/projetos', label: 'Projetos', icon: FolderKanban, bg: 'bg-steel-100', fg: 'text-brand-900' },
 ] as const;
 
 export default function MobileDashboardPage() {
   const { data: stats, isLoading } = useSWR<DashboardStats>('/api/v1/crm/dashboard/stats', fetcher);
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-6 p-4">
       <section>
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Resumo</h2>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-steel-400">Resumo</h2>
         {isLoading ? (
           <div className="flex justify-center py-10">
-            <Loader2 className="animate-spin text-gray-300" size={28} />
+            <Loader2 className="animate-spin text-brand-500" size={28} />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="Total Leads"
               value={stats?.total_leads ?? 0}
-              icon={<Users size={18} className="text-blue-500" />}
-              bg="bg-blue-50"
+              icon={<Users size={18} className="text-brand-500" />}
+              bg="bg-brand-500/10"
             />
             <StatCard
               label="Neg. Abertos"
@@ -47,33 +47,33 @@ export default function MobileDashboardPage() {
             <StatCard
               label="Valor Aberto"
               value={formatCurrency(stats?.valor_aberto ?? 0)}
-              icon={<Wallet size={18} className="text-indigo-500" />}
-              bg="bg-indigo-50"
+              icon={<Wallet size={18} className="text-brand-700" />}
+              bg="bg-steel-100"
               small
             />
             <StatCard
               label="Conversão"
               value={`${(stats?.taxa_conversao ?? 0).toFixed(1)}%`}
-              icon={<TrendingUp size={18} className="text-green-500" />}
-              bg="bg-green-50"
+              icon={<TrendingUp size={18} className="text-emerald-500" />}
+              bg="bg-emerald-50"
             />
           </div>
         )}
       </section>
 
       <section>
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Acesso Rápido</h2>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-steel-400">Acesso Rápido</h2>
         <div className="grid grid-cols-2 gap-3">
           {SHORTCUTS.map(({ href, label, icon: Icon, bg, fg }) => (
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm active:scale-95 transition-transform"
+              className="flex items-center gap-3 rounded-lg border border-steel-100 bg-white p-4 shadow-sm transition-transform active:scale-95"
             >
-              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${bg} ${fg}`}>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bg} ${fg}`}>
                 <Icon size={20} />
               </div>
-              <span className="text-sm font-medium text-gray-800">{label}</span>
+              <span className="text-sm font-medium text-steel-900">{label}</span>
             </Link>
           ))}
         </div>
@@ -92,10 +92,10 @@ function StatCard({
   small?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${bg} mb-3`}>{icon}</div>
-      <p className={`font-bold text-gray-900 leading-none ${small ? 'text-base' : 'text-2xl'}`}>{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{label}</p>
+    <div className="rounded-lg border border-steel-100 bg-white p-4 shadow-sm">
+      <div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-lg ${bg}`}>{icon}</div>
+      <p className={`font-bold leading-none text-steel-950 ${small ? 'text-base' : 'text-2xl'}`}>{value}</p>
+      <p className="mt-1 text-xs text-steel-400">{label}</p>
     </div>
   );
 }

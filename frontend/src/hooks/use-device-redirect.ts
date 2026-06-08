@@ -8,6 +8,7 @@ const MOBILE_BREAKPOINT = 768;
 const TO_MOBILE: Record<string, string> = {
   '/dashboard': '/m/dashboard',
   '/leads': '/m/leads',
+  '/inspecoes/campo': '/m/inspecoes/campo',
   '/inspecoes': '/m/inspecoes',
   '/projetos': '/m/projetos',
   '/negocios': '/m/negocios',
@@ -16,6 +17,7 @@ const TO_MOBILE: Record<string, string> = {
 const TO_DESKTOP: Record<string, string> = {
   '/m/dashboard': '/dashboard',
   '/m/leads': '/leads',
+  '/m/inspecoes/campo': '/inspecoes/campo',
   '/m/inspecoes': '/inspecoes',
   '/m/projetos': '/projetos',
   '/m/negocios': '/negocios',

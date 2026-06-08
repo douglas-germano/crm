@@ -226,7 +226,11 @@ def listar_inspecoes(usuario_atual):
         query = Inspecao.query
 
         if status:
-            query = query.filter(Inspecao.status == status)
+            status_list = [item.strip() for item in status.split(',') if item.strip()]
+            if len(status_list) > 1:
+                query = query.filter(Inspecao.status.in_(status_list))
+            else:
+                query = query.filter(Inspecao.status == status)
         if ativo_id:
             query = query.filter(Inspecao.ativo_id == ativo_id)
         if contrato_amc_id:
