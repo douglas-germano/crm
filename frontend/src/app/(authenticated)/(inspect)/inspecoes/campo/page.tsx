@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, ShieldAlert, ArrowLeft, Camera, FileText, Settings } from 'lucide-react';
+import { CalendarDays, Check, X, ShieldAlert, ArrowLeft, Camera, FileText, Settings } from 'lucide-react';
 
 interface RespostaChecklistForm {
   pergunta_id: number;
@@ -25,11 +25,13 @@ export default function InspecaoCampoPage() {
   const inspecaoId = searchParams.get('id');
 
   const [inspecao, setInspecao] = useState<Inspecao | null>(null);
+  const [inspecoesDisponiveis, setInspecoesDisponiveis] = useState<Inspecao[]>([]);
   const [template, setTemplate] = useState<TemplateChecklist | null>(null);
   const [respostas, setRespostas] = useState<Record<number, RespostaChecklistForm>>({});
   const [observacoesGerais, setObservacoesGerais] = useState('');
   const [artNumero, setArtNumero] = useState('');
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
 
@@ -37,6 +39,14 @@ export default function InspecaoCampoPage() {
     async function carregarDados() {
       try {
         setLoading(true);
+        setErro('');
+
+        if (!inspecaoId) {
+          const resInspecoes = await api.get('/api/v1/inspect/inspecoes?status=agendada,em_campo');
+          setInspecoesDisponiveis(Array.isArray(resInspecoes.data) ? resInspecoes.data : []);
+          return;
+        }
+
         // Buscar detalhes da inspeção
         const resInspecao = await api.get(`/api/v1/inspect/inspecoes/${inspecaoId}`);
         const dataInspecao: Inspecao = resInspecao.data;
@@ -73,16 +83,15 @@ export default function InspecaoCampoPage() {
           });
         }
         setRespostas(mapaRespostas);
-      } catch {
-        // erro tratado pelo estado vazio — mensagem exibida na UI
+      } catch (error) {
+        console.error('Erro ao carregar inspeção de campo:', error);
+        setErro(inspecaoId ? 'Não foi possível carregar a inspeção selecionada.' : 'Não foi possível carregar as inspeções de campo.');
       } finally {
         setLoading(false);
       }
     }
 
-    if (inspecaoId) {
-      carregarDados();
-    }
+    carregarDados();
   }, [inspecaoId]);
 
   const handleRespostaChange = (perguntaId: number, valor: 'conforme' | 'nao_conforme' | 'nao_se_aplica') => {
@@ -166,16 +175,89 @@ export default function InspecaoCampoPage() {
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
           <Settings className="mx-auto h-12 w-12 animate-spin text-sky-600" />
-          <p className="mt-4 text-gray-500 font-medium">Carregando formulário de campo regulatório...</p>
+          <p className="mt-4 text-gray-500 font-medium">
+            {inspecaoId ? 'Carregando formulário de campo regulatório...' : 'Carregando inspeções de campo...'}
+          </p>
         </div>
+      </div>
+    );
+  }
+
+  if (!inspecaoId) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+            Apex Inspect — Inspeção de Campo
+          </h2>
+          <p className="text-sm font-medium leading-relaxed text-muted-foreground">
+            Selecione uma inspeção agendada ou em andamento para preencher o checklist técnico.
+          </p>
+        </div>
+
+        {erro && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {erro}
+          </div>
+        )}
+
+        {inspecoesDisponiveis.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <ShieldAlert className="h-10 w-10 text-muted-foreground" />
+              <h3 className="mt-4 text-base font-semibold text-foreground">Nenhuma inspeção disponível</h3>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Não há inspeções agendadas ou em campo no momento. Agende uma inspeção no módulo Inspect para iniciar o preenchimento.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {inspecoesDisponiveis.map((item) => (
+              <Card key={item.id} className="border-border shadow-sm">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-base">{item.ativo_nome || 'Ativo não identificado'}</CardTitle>
+                      <CardDescription className="mt-1">
+                        {item.ativo_tag ? `#${item.ativo_tag}` : item.template_nome || 'Checklist técnico'}
+                      </CardDescription>
+                    </div>
+                    <Badge variant={item.status === 'em_campo' ? 'default' : 'secondary'} className="shrink-0">
+                      {item.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="font-medium text-foreground">{item.ativo_empresa_nome || 'Cliente não informado'}</div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <CalendarDays className="h-4 w-4" />
+                      <span>{item.data_inspecao || 'Data não informada'}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{item.template_nome || 'Template não informado'}</div>
+                  </div>
+                  <Button className="w-full" onClick={() => router.push(`/inspecoes/campo?id=${item.id}`)}>
+                    Abrir Checklist
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
   if (!inspecao || !template) {
     return (
-      <div className="p-6 text-center">
-        <p className="text-red-500 font-semibold">Erro: Inspeção ou Checklist Regulatório não encontrado.</p>
+      <div className="space-y-4 p-6 text-center">
+        <p className="font-semibold text-red-500">
+          {erro || 'Erro: Inspeção ou Checklist Regulatório não encontrado.'}
+        </p>
+        <Button variant="outline" onClick={() => router.push('/inspecoes/campo')}>
+          Voltar para inspeções disponíveis
+        </Button>
       </div>
     );
   }
@@ -303,7 +385,7 @@ export default function InspecaoCampoPage() {
                         type="button"
                         variant={resp.resposta === 'nao_se_aplica' ? 'default' : 'outline'}
                         className={`font-semibold py-6 flex flex-col items-center justify-center gap-1 border-slate-200 transition ${resp.resposta === 'nao_se_aplica' ? 'bg-slate-700 hover:bg-slate-800 text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'}`}
-                        onClick={() => handleSimularFoto(item.id)} // Simula com foto ao clicar em Não se Aplica ou direto no botão abaixo
+                        onClick={() => handleRespostaChange(item.id, 'nao_se_aplica')}
                       >
                         <span className="h-5 flex items-center text-sm font-bold">-</span>
                         <span className="text-xs">NÃO SE APLICA</span>

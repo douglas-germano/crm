@@ -1,462 +1,395 @@
 """
-Seed script para popular o banco de dados do Apex CRM com dados de exemplo.
-Uso: python seed.py
+Seed deterministico para o schema public do Apex.
+
+Uso:
+  cd backend
+  source venv/bin/activate
+  python3 seed.py
+
+O script limpa os dados do schema public mantendo a tabela alembic_version e
+recria uma base integrada para Apex CRM e Apex Inspect.
 """
 from dotenv import load_dotenv
 load_dotenv()
 
-from app import create_app, db
-from app.models.tenant import Tenant
-from app.models import (
-    Usuario, Perfil, Lead, Pipeline, Estagio, LeadEstagio,
-    Negocio, AtividadeNegocio, Empresa, Contato, Servico,
-    Projeto, Tarefa, ChecklistItem, Permissao
-)
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
+
 from sqlalchemy import text
-import random
-import secrets
-import string
+
+from app import create_app, db
+from app.models import (
+    ApontamentoHora,
+    AssinaturaCampo,
+    AtividadeNegocio,
+    Ativo,
+    ChecklistItem,
+    ComentarioTarefa,
+    Contato,
+    ContratoAMC,
+    Empresa,
+    Estagio,
+    EvidenciaCampo,
+    ExecucaoCampo,
+    Inspecao,
+    Lead,
+    LeadEstagio,
+    MaterialUtilizado,
+    Negocio,
+    OrdemServico,
+    Perfil,
+    Pipeline,
+    Projeto,
+    RelatorioTecnico,
+    Servico,
+    Tarefa,
+    TemplateChecklist,
+    Tenant,
+    Usuario,
+)
+
 
 app = create_app()
+NOW = datetime.now(timezone.utc)
+TODAY = date.today()
+
+
+def limpar_schema_public():
+    db.session.execute(text("SET search_path TO public"))
+    tabelas = db.session.execute(text("""
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_type = 'BASE TABLE'
+          AND table_name <> 'alembic_version'
+        ORDER BY table_name
+    """)).scalars().all()
+
+    if tabelas:
+        nomes = ", ".join(f'"{tabela}"' for tabela in tabelas)
+        db.session.execute(text(f"TRUNCATE TABLE {nomes} RESTART IDENTITY CASCADE"))
+        db.session.commit()
+        print(f"[ok] Schema public limpo: {len(tabelas)} tabelas truncadas")
+    else:
+        print("[ok] Schema public sem tabelas para limpar")
+
+
+def criar_usuarios():
+    from app.utils.iniciar_dados import inicializar_dados
+
+    dados_base = inicializar_dados()
+    admin = dados_base["admin"]
+    admin.nome = "Administrador Apex"
+    admin.email = "admin@example.com"
+    admin.senha = "admin@example.com"
+    admin.deve_trocar_senha = False
+    admin.ativo = True
+
+    admin_perfil = Perfil.query.filter_by(nome="Administrador").first()
+    supervisor_perfil = Perfil.query.filter_by(nome="Supervisor").first()
+    vendedor_perfil = Perfil.query.filter_by(nome="Vendedor").first()
+
+    engenheiro_perfil = Perfil(
+        nome="Engenheiro de Campo",
+        descricao="Responsavel por inspecoes e execucoes do Apex Inspect",
+        permissoes=admin_perfil.permissoes,
+    )
+    cliente_perfil = Perfil(
+        nome="Cliente",
+        descricao="Acesso de cliente ao portal e relatorios",
+        permissoes=[],
+    )
+    db.session.add_all([engenheiro_perfil, cliente_perfil])
+    db.session.flush()
+
+    usuarios = [
+        Usuario(nome="Carlos Mendes", email="carlos@apex.com.br", perfil_id=supervisor_perfil.id, ativo=True, deve_trocar_senha=False),
+        Usuario(nome="Fernanda Lima", email="fernanda@apex.com.br", perfil_id=vendedor_perfil.id, ativo=True, deve_trocar_senha=False),
+        Usuario(nome="Mariana Torres", email="mariana@apex.com.br", perfil_id=engenheiro_perfil.id, ativo=True, deve_trocar_senha=False),
+        Usuario(nome="Roberto Almeida", email="roberto@apex.com.br", perfil_id=engenheiro_perfil.id, ativo=True, deve_trocar_senha=False),
+        Usuario(nome="Cliente MetalRondon", email="cliente@metalrondon.com.br", perfil_id=cliente_perfil.id, ativo=True, deve_trocar_senha=False),
+    ]
+
+    for usuario in usuarios:
+        usuario.senha = "eng123"
+
+    db.session.add_all(usuarios)
+    db.session.commit()
+
+    return {
+        "admin": admin,
+        "supervisor": usuarios[0],
+        "vendedora": usuarios[1],
+        "engenheira": usuarios[2],
+        "engenheiro": usuarios[3],
+        "cliente": usuarios[4],
+    }
+
+
+def criar_base_crm(usuarios):
+    tenant = Tenant(
+        nome_fantasia="Apex Engenharia",
+        subdominio="apex",
+        db_schema="public",
+    )
+    db.session.add(tenant)
+
+    servicos = [
+        Servico(nome="Inspecao NR-13", descricao="Inspecao tecnica de vasos de pressao e caldeiras", categoria="inspecao"),
+        Servico(nome="PMOC HVAC", descricao="Plano de manutencao, operacao e controle de climatizacao", categoria="manutencao"),
+        Servico(nome="Adequacao NR-12", descricao="Projeto e regularizacao de seguranca em maquinas", categoria="projeto"),
+        Servico(nome="Contrato AMC Industrial", descricao="Atendimento recorrente para manutencao e inspecao", categoria="manutencao"),
+    ]
+    db.session.add_all(servicos)
+
+    pipeline = Pipeline(
+        nome="Funil Apex CRM",
+        descricao="Pipeline comercial para oportunidades de engenharia e campo",
+    )
+    estagios = [
+        Estagio(nome="Prospeccao", ordem=1, cor="#2563eb", descricao="Oportunidades identificadas", pipeline=pipeline),
+        Estagio(nome="Qualificacao", ordem=2, cor="#f59e0b", descricao="Necessidade e fit tecnico validados", pipeline=pipeline),
+        Estagio(nome="Levantamento Tecnico", ordem=3, cor="#ea580c", descricao="Visita ou coleta de dados", pipeline=pipeline),
+        Estagio(nome="Proposta", ordem=4, cor="#7c3aed", descricao="Proposta tecnico-comercial enviada", pipeline=pipeline),
+        Estagio(nome="Contrato/OS", ordem=5, cor="#16a34a", descricao="Negocio aprovado para execucao", pipeline=pipeline),
+    ]
+    db.session.add(pipeline)
+
+    empresas = [
+        Empresa(
+            razao_social="Industria Metalurgica Rondon Ltda",
+            nome_fantasia="MetalRondon",
+            cnpj="12.345.678/0001-90",
+            ramo="Metalurgia",
+            porte="grande",
+            endereco="Av. Industrial, 1500",
+            cidade="Rondonopolis",
+            estado="MT",
+            telefone="(66) 3423-1000",
+            email="manutencao@metalrondon.com.br",
+        ),
+        Empresa(
+            razao_social="Agro Maquinas Cerrado S.A.",
+            nome_fantasia="AgroCerrado",
+            cnpj="23.456.789/0001-01",
+            ramo="Maquinas Agricolas",
+            porte="grande",
+            endereco="Rod. BR-364 Km 12",
+            cidade="Rondonopolis",
+            estado="MT",
+            telefone="(66) 3411-2000",
+            email="engenharia@agrocerrado.com.br",
+        ),
+        Empresa(
+            razao_social="Hospital Sao Bento Ltda",
+            nome_fantasia="Hospital Sao Bento",
+            cnpj="34.567.890/0001-12",
+            ramo="Saude",
+            porte="medio",
+            endereco="Rua Dom Pedro II, 420",
+            cidade="Cuiaba",
+            estado="MT",
+            telefone="(65) 3322-9090",
+            email="operacoes@hospitalsaobento.com.br",
+        ),
+    ]
+    db.session.add_all(empresas)
+    db.session.flush()
+
+    contatos = [
+        Contato(nome="Jose Roberto Almeida", cargo="Diretor Industrial", email="jose.roberto@metalrondon.com.br", telefone="(66) 3423-1001", celular="(66) 99901-1001", principal=True, empresa_id=empresas[0].id),
+        Contato(nome="Paulo Henrique Souza", cargo="Gerente de Operacoes", email="paulo@agrocerrado.com.br", telefone="(66) 3411-2001", celular="(66) 99903-2001", principal=True, empresa_id=empresas[1].id),
+        Contato(nome="Dra. Helena Prado", cargo="Diretora Operacional", email="helena@hospitalsaobento.com.br", telefone="(65) 3322-9091", celular="(65) 99920-9091", principal=True, empresa_id=empresas[2].id),
+    ]
+    db.session.add_all(contatos)
+    db.session.flush()
+
+    leads = [
+        Lead(nome=contatos[0].nome, email=contatos[0].email, telefone=contatos[0].celular, empresa_nome=empresas[0].nome_fantasia, empresa_id=empresas[0].id, cargo=contatos[0].cargo, interesse="Inspecao NR-13 em vasos de pressao", origem="Indicacao", status="qualificado", responsavel_id=usuarios["vendedora"].id),
+        Lead(nome=contatos[1].nome, email=contatos[1].email, telefone=contatos[1].celular, empresa_nome=empresas[1].nome_fantasia, empresa_id=empresas[1].id, cargo=contatos[1].cargo, interesse="Contrato AMC para manutencao de colhedoras", origem="Evento", status="convertido", responsavel_id=usuarios["supervisor"].id),
+        Lead(nome=contatos[2].nome, email=contatos[2].email, telefone=contatos[2].celular, empresa_nome=empresas[2].nome_fantasia, empresa_id=empresas[2].id, cargo=contatos[2].cargo, interesse="PMOC e laudos de climatizacao", origem="Site", status="contatado", responsavel_id=usuarios["vendedora"].id),
+    ]
+    db.session.add_all(leads)
+    db.session.flush()
+
+    for posicao, lead in enumerate(leads):
+        db.session.add(LeadEstagio(lead_id=lead.id, estagio_id=estagios[min(posicao + 1, len(estagios) - 1)].id, posicao=posicao))
+
+    negocios = [
+        Negocio(nome="NR-13 MetalRondon - Linha de Vasos", descricao="Inspecao inicial com relatorio tecnico e ART", valor=48500, tipo="unico", probabilidade=80, data_previsao_fechamento=TODAY + timedelta(days=15), status="aberto", lead_id=leads[0].id, pipeline_id=pipeline.id, estagio_id=estagios[3].id, responsavel_id=usuarios["vendedora"].id, servico_id=servicos[0].id, criado_por_id=usuarios["admin"].id),
+        Negocio(nome="AMC AgroCerrado - Frota Industrial", descricao="Contrato recorrente para inspecao e manutencao de campo", valor=18500, tipo="recorrente", periodicidade="mensal", probabilidade=100, data_previsao_fechamento=TODAY - timedelta(days=5), status="ganho", data_fechamento=NOW - timedelta(days=5), lead_id=leads[1].id, pipeline_id=pipeline.id, estagio_id=estagios[4].id, responsavel_id=usuarios["supervisor"].id, servico_id=servicos[3].id, criado_por_id=usuarios["admin"].id),
+        Negocio(nome="PMOC Hospital Sao Bento", descricao="Implantacao de rotinas PMOC e laudos de climatizacao", valor=32000, tipo="unico", probabilidade=60, data_previsao_fechamento=TODAY + timedelta(days=25), status="aberto", lead_id=leads[2].id, pipeline_id=pipeline.id, estagio_id=estagios[2].id, responsavel_id=usuarios["vendedora"].id, servico_id=servicos[1].id, criado_por_id=usuarios["admin"].id),
+    ]
+    db.session.add_all(negocios)
+    db.session.flush()
+
+    atividades = [
+        AtividadeNegocio(tipo="visita_tecnica", titulo="Levantamento NR-13 MetalRondon", descricao="Mapear equipamentos e documentos existentes", data_agendada=NOW + timedelta(days=2), status="pendente", negocio_id=negocios[0].id, responsavel_id=usuarios["engenheira"].id),
+        AtividadeNegocio(tipo="reuniao", titulo="Kickoff AMC AgroCerrado", descricao="Definir calendario das visitas recorrentes", data_agendada=NOW - timedelta(days=4), data_conclusao=NOW - timedelta(days=4), status="concluida", resultado="Calendario mensal aprovado", negocio_id=negocios[1].id, responsavel_id=usuarios["supervisor"].id),
+        AtividadeNegocio(tipo="email", titulo="Enviar proposta PMOC", descricao="Enviar proposta revisada com cronograma", data_agendada=NOW + timedelta(days=1), status="pendente", negocio_id=negocios[2].id, responsavel_id=usuarios["vendedora"].id),
+    ]
+    db.session.add_all(atividades)
+
+    projetos = [
+        Projeto(nome="Implantacao AMC AgroCerrado", descricao="Estruturar rotina de campo e manutencao recorrente", status="em_andamento", prioridade="alta", data_inicio=TODAY - timedelta(days=5), data_previsao_fim=TODAY + timedelta(days=85), valor_contrato=222000, percentual_concluido=35, negocio_id=negocios[1].id, empresa_id=empresas[1].id, gerente_id=usuarios["supervisor"].id, criado_por_id=usuarios["admin"].id),
+        Projeto(nome="PMOC Hospital Sao Bento", descricao="Plano de manutencao, operacao e controle dos sistemas HVAC", status="planejamento", prioridade="media", data_inicio=TODAY + timedelta(days=10), data_previsao_fim=TODAY + timedelta(days=55), valor_contrato=32000, percentual_concluido=10, negocio_id=negocios[2].id, empresa_id=empresas[2].id, gerente_id=usuarios["engenheira"].id, criado_por_id=usuarios["admin"].id),
+    ]
+    db.session.add_all(projetos)
+    db.session.flush()
+
+    tarefas = [
+        Tarefa(titulo="Cadastrar ativos criticos", descricao="Inventariar equipamentos atendidos pelo contrato", status="concluida", prioridade="alta", data_inicio=TODAY - timedelta(days=5), data_prazo=TODAY - timedelta(days=1), data_conclusao=NOW - timedelta(days=1), ordem=1, projeto_id=projetos[0].id, responsavel_id=usuarios["engenheira"].id),
+        Tarefa(titulo="Executar primeira rota de campo", descricao="Realizar inspecao e evidenciar nao conformidades", status="em_andamento", prioridade="alta", data_inicio=TODAY, data_prazo=TODAY + timedelta(days=7), ordem=2, projeto_id=projetos[0].id, responsavel_id=usuarios["engenheiro"].id),
+        Tarefa(titulo="Validar carga termica dos ambientes", descricao="Coletar dados para PMOC", status="a_fazer", prioridade="media", data_inicio=TODAY + timedelta(days=10), data_prazo=TODAY + timedelta(days=18), ordem=1, projeto_id=projetos[1].id, responsavel_id=usuarios["engenheira"].id),
+    ]
+    db.session.add_all(tarefas)
+    db.session.flush()
+
+    db.session.add_all([
+        ChecklistItem(descricao="Tags e localizacao conferidas", concluido=True, ordem=1, tarefa_id=tarefas[0].id),
+        ChecklistItem(descricao="Fotos de placa anexadas", concluido=True, ordem=2, tarefa_id=tarefas[0].id),
+        ChecklistItem(descricao="Plano de rota aprovado", concluido=False, ordem=1, tarefa_id=tarefas[1].id),
+        ComentarioTarefa(conteudo="Cliente confirmou acesso aos galpoes a partir das 07h30.", tarefa_id=tarefas[1].id, autor_id=usuarios["supervisor"].id),
+    ])
+
+    return {
+        "servicos": servicos,
+        "pipeline": pipeline,
+        "estagios": estagios,
+        "empresas": empresas,
+        "contatos": contatos,
+        "leads": leads,
+        "negocios": negocios,
+        "projetos": projetos,
+    }
+
+
+def criar_base_inspect(usuarios, crm):
+    templates = [
+        TemplateChecklist(
+            nome="Checklist NR-13 - Vaso de Pressao",
+            regulacao="nr13",
+            versao="1.0",
+            itens=[
+                {"id": 1, "pergunta": "Placa de identificacao legivel?", "criticidade": "alta"},
+                {"id": 2, "pergunta": "Valvula de seguranca lacrada e calibrada?", "criticidade": "critica"},
+                {"id": 3, "pergunta": "Prontuario e ART disponiveis?", "criticidade": "alta"},
+                {"id": 4, "pergunta": "Ha sinais de corrosao, trincas ou vazamentos?", "criticidade": "critica"},
+            ],
+        ),
+        TemplateChecklist(
+            nome="Checklist PMOC - HVAC",
+            regulacao="pmoc",
+            versao="1.0",
+            itens=[
+                {"id": 1, "pergunta": "Filtros limpos e identificados?", "criticidade": "media"},
+                {"id": 2, "pergunta": "Drenos livres e sem vazamentos?", "criticidade": "media"},
+                {"id": 3, "pergunta": "Temperatura de insuflamento registrada?", "criticidade": "alta"},
+                {"id": 4, "pergunta": "Plano de manutencao atualizado?", "criticidade": "alta"},
+            ],
+        ),
+        TemplateChecklist(
+            nome="Checklist NR-12 - Maquinas",
+            regulacao="nr12",
+            versao="1.0",
+            itens=[
+                {"id": 1, "pergunta": "Protecoes mecanicas instaladas?", "criticidade": "critica"},
+                {"id": 2, "pergunta": "Botoes de emergencia operacionais?", "criticidade": "critica"},
+                {"id": 3, "pergunta": "Sinalizacao de risco presente?", "criticidade": "media"},
+            ],
+        ),
+    ]
+    db.session.add_all(templates)
+    db.session.flush()
+
+    empresas = crm["empresas"]
+    ativos = [
+        Ativo(nome="Vaso de Pressao VP-01", tag_identificacao="MR-VP-001", categoria="nr13", fabricante="Dedini", modelo="VP 12bar", numero_serie="DNI-2020-4481", dados_tecnicos={"pressao_projeto_bar": 12, "volume_litros": 1500}, localizacao="Galpao 2 - Utilidades", data_instalacao=TODAY - timedelta(days=900), status="ativo", empresa_id=empresas[0].id),
+        Ativo(nome="Caldeira Flamotubular C-02", tag_identificacao="MR-CAL-002", categoria="nr13", fabricante="Aalborg", modelo="FT-4000", numero_serie="AAL-19-7782", dados_tecnicos={"pressao_trabalho_bar": 10, "capacidade_kg_h": 4000}, localizacao="Casa de Caldeiras", data_instalacao=TODAY - timedelta(days=1500), status="manutencao", empresa_id=empresas[0].id),
+        Ativo(nome="Colhedora Industrial CH-07", tag_identificacao="AG-CH-007", categoria="nr12", fabricante="John Deere", modelo="CH950", numero_serie="JD-CH-950-07", dados_tecnicos={"potencia_cv": 352}, localizacao="Patio de Manutencao", data_instalacao=TODAY - timedelta(days=720), status="ativo", empresa_id=empresas[1].id),
+        Ativo(nome="Chiller Central CHL-01", tag_identificacao="HSB-HVAC-001", categoria="hvac", fabricante="Carrier", modelo="AquaForce", numero_serie="CAR-2021-9911", dados_tecnicos={"capacidade_tr": 120, "gas": "R134a"}, localizacao="Cobertura Bloco A", data_instalacao=TODAY - timedelta(days=620), status="ativo", empresa_id=empresas[2].id),
+    ]
+    db.session.add_all(ativos)
+    db.session.flush()
+
+    contratos = [
+        ContratoAMC(titulo="AMC AgroCerrado - Frota Industrial", plano="mensal", valor_recorrente=18500, data_inicio=TODAY - timedelta(days=5), data_fim=TODAY + timedelta(days=360), status="ativo", empresa_id=empresas[1].id),
+        ContratoAMC(titulo="PMOC Hospital Sao Bento", plano="mensal", valor_recorrente=6400, data_inicio=TODAY + timedelta(days=10), data_fim=TODAY + timedelta(days=375), status="ativo", empresa_id=empresas[2].id),
+    ]
+    db.session.add_all(contratos)
+    db.session.flush()
+
+    ordens = [
+        OrdemServico(codigo="OS-INS-0001", titulo="Inspecao NR-13 - Vaso VP-01", tipo="inspecao", status="em_campo", prioridade="alta", descricao="Inspecao externa e documental do vaso de pressao VP-01.", escopo={"norma": "NR-13", "entregaveis": ["relatorio tecnico", "registro fotografico", "plano de adequacao"]}, endereco_atendimento=empresas[0].endereco, latitude=-16.4709, longitude=-54.6356, data_agendada=NOW + timedelta(days=1), data_inicio=NOW - timedelta(hours=3), empresa_id=empresas[0].id, ativo_id=ativos[0].id, projeto_id=None, negocio_id=crm["negocios"][0].id, responsavel_id=usuarios["engenheira"].id, criado_por_id=usuarios["admin"].id),
+        OrdemServico(codigo="OS-INS-0002", titulo="Rota AMC - Colhedora CH-07", tipo="manutencao", status="concluida", prioridade="normal", descricao="Inspecao preventiva mensal e ajustes de seguranca NR-12.", escopo={"rotina": "mensal", "itens": ["seguranca", "lubrificacao", "relatorio"]}, endereco_atendimento=empresas[1].endereco, latitude=-16.4668, longitude=-54.6371, data_agendada=NOW - timedelta(days=2), data_inicio=NOW - timedelta(days=2, hours=-1), data_fim=NOW - timedelta(days=2, hours=-5), empresa_id=empresas[1].id, ativo_id=ativos[2].id, contrato_amc_id=contratos[0].id, projeto_id=crm["projetos"][0].id, negocio_id=crm["negocios"][1].id, responsavel_id=usuarios["engenheiro"].id, criado_por_id=usuarios["admin"].id),
+        OrdemServico(codigo="OS-INS-0003", titulo="PMOC - Chiller Central CHL-01", tipo="inspecao", status="planejada", prioridade="normal", descricao="Coleta inicial para laudo PMOC.", escopo={"norma": "PMOC", "ambientes": ["Bloco A", "UTI", "Centro cirurgico"]}, endereco_atendimento=empresas[2].endereco, latitude=-15.5989, longitude=-56.0949, data_agendada=NOW + timedelta(days=10), empresa_id=empresas[2].id, ativo_id=ativos[3].id, contrato_amc_id=contratos[1].id, projeto_id=crm["projetos"][1].id, negocio_id=crm["negocios"][2].id, responsavel_id=usuarios["engenheira"].id, criado_por_id=usuarios["admin"].id),
+    ]
+    db.session.add_all(ordens)
+    db.session.flush()
+
+    execucoes = [
+        ExecucaoCampo(status="em_andamento", data_inicio=NOW - timedelta(hours=3), checklist_snapshot=templates[0].itens, respostas=[{"pergunta_id": 1, "resposta": "conforme", "observacao": "Placa legivel"}, {"pergunta_id": 2, "resposta": "nao_conforme", "observacao": "Calibracao vencida"}], observacoes="Inspecao em andamento com pendencia critica em valvula.", latitude_inicio=-16.4709, longitude_inicio=-54.6356, ordem_servico_id=ordens[0].id, executor_id=usuarios["engenheira"].id),
+        ExecucaoCampo(status="concluida", data_inicio=NOW - timedelta(days=2, hours=-1), data_fim=NOW - timedelta(days=2, hours=-5), checklist_snapshot=templates[2].itens, respostas=[{"pergunta_id": 1, "resposta": "conforme"}, {"pergunta_id": 2, "resposta": "conforme"}, {"pergunta_id": 3, "resposta": "conforme"}], observacoes="Rota concluida sem pendencias impeditivas.", latitude_inicio=-16.4668, longitude_inicio=-54.6371, latitude_fim=-16.4668, longitude_fim=-54.6371, ordem_servico_id=ordens[1].id, executor_id=usuarios["engenheiro"].id),
+    ]
+    db.session.add_all(execucoes)
+    db.session.flush()
+
+    db.session.add_all([
+        EvidenciaCampo(tipo="foto", url="https://example.com/evidencias/vp01-placa.jpg", legenda="Placa de identificacao VP-01", origem="campo", item_referencia="pergunta_1", latitude=-16.4709, longitude=-54.6356, metadados={"arquivo": "vp01-placa.jpg"}, ordem_servico_id=ordens[0].id, execucao_id=execucoes[0].id, criado_por_id=usuarios["engenheira"].id),
+        EvidenciaCampo(tipo="foto", url="https://example.com/evidencias/ch07-protecao.jpg", legenda="Protecao mecanica da colhedora", origem="campo", item_referencia="pergunta_1", latitude=-16.4668, longitude=-54.6371, metadados={"arquivo": "ch07-protecao.jpg"}, ordem_servico_id=ordens[1].id, execucao_id=execucoes[1].id, criado_por_id=usuarios["engenheiro"].id),
+        ApontamentoHora(data_inicio=NOW - timedelta(hours=3), data_fim=NOW - timedelta(hours=1), horas=2.0, tipo="campo", descricao="Inspecao externa VP-01", ordem_servico_id=ordens[0].id, usuario_id=usuarios["engenheira"].id),
+        ApontamentoHora(data_inicio=NOW - timedelta(days=2, hours=-1), data_fim=NOW - timedelta(days=2, hours=-5), horas=4.0, tipo="campo", descricao="Rota preventiva CH-07", ordem_servico_id=ordens[1].id, usuario_id=usuarios["engenheiro"].id),
+        MaterialUtilizado(nome="Lacre numerado para valvula", quantidade=2, unidade="un", valor_unitario=18.5, observacao="Aplicado apos conferencia", ordem_servico_id=ordens[1].id, registrado_por_id=usuarios["engenheiro"].id),
+        AssinaturaCampo(nome="Paulo Henrique Souza", documento="123.456.789-00", cargo="Gerente de Operacoes", tipo="cliente", assinatura_url="https://example.com/assinaturas/paulo.png", aceite_texto="Servico recebido e evidencias conferidas.", latitude=-16.4668, longitude=-54.6371, ordem_servico_id=ordens[1].id, usuario_id=usuarios["cliente"].id),
+        RelatorioTecnico(titulo="Relatorio Tecnico OS-INS-0002", status="emitido", conteudo={"resumo": "Rota AMC concluida", "nao_conformidades": 0, "recomendacoes": ["manter rotina mensal"]}, pdf_url="https://example.com/relatorios/os-ins-0002.pdf", emitido_em=NOW - timedelta(days=2), ordem_servico_id=ordens[1].id, emitido_por_id=usuarios["engenheiro"].id),
+    ])
+
+    inspecoes = [
+        Inspecao(data_inspecao=TODAY, data_realizacao=NOW - timedelta(hours=1), status="em_campo", respostas=execucoes[0].respostas, observacoes_gerais="Pendencia em valvula de seguranca.", art_numero="ART-MT-2026-0001", ativo_id=ativos[0].id, template_id=templates[0].id, ordem_servico_id=ordens[0].id, inspetor_id=usuarios["engenheira"].id, criado_por_id=usuarios["admin"].id),
+        Inspecao(data_inspecao=TODAY - timedelta(days=2), data_realizacao=NOW - timedelta(days=2), status="concluida", respostas=execucoes[1].respostas, observacoes_gerais="Sem nao conformidades criticas.", art_numero="ART-MT-2026-0002", pdf_laudo_url="https://example.com/laudos/ch07.pdf", ativo_id=ativos[2].id, template_id=templates[2].id, contrato_amc_id=contratos[0].id, ordem_servico_id=ordens[1].id, inspetor_id=usuarios["engenheiro"].id, criado_por_id=usuarios["admin"].id),
+        Inspecao(data_inspecao=TODAY + timedelta(days=10), status="agendada", respostas=[], observacoes_gerais="Aguardando visita inicial.", ativo_id=ativos[3].id, template_id=templates[1].id, contrato_amc_id=contratos[1].id, ordem_servico_id=ordens[2].id, inspetor_id=usuarios["engenheira"].id, criado_por_id=usuarios["admin"].id),
+    ]
+    db.session.add_all(inspecoes)
+    db.session.commit()
+
+    return {
+        "templates": templates,
+        "ativos": ativos,
+        "contratos": contratos,
+        "ordens": ordens,
+        "inspecoes": inspecoes,
+    }
 
 
 def seed():
     with app.app_context():
-        print("=== SEED: Populando banco PostgreSQL ===\n")
+        print("=== SEED PUBLIC: Apex CRM + Apex Inspect ===")
+        limpar_schema_public()
+        usuarios = criar_usuarios()
+        crm = criar_base_crm(usuarios)
+        inspect = criar_base_inspect(usuarios, crm)
 
-        # 1. Garantir tenant apex
-        tenant = Tenant.query.filter_by(subdominio='apex').first()
-        if not tenant:
-            tenant = Tenant(nome_fantasia='Apex Engenharia', subdominio='apex', db_schema='public')
-            db.session.add(tenant)
-            db.session.commit()
-            print("[✓] Tenant 'apex' criado")
-        else:
-            print("[✓] Tenant 'apex' já existe")
-
-        # 2. Inicializar permissões e perfis
-        from app.utils.iniciar_dados import inicializar_dados
-        inicializar_dados()
-
-        # 3. Pipeline padrão
-        Pipeline.criar_pipeline_padrao()
-
-        admin_perfil = Perfil.query.filter_by(nome='Administrador').first()
-        vendedor_perfil = Perfil.query.filter_by(nome='Vendedor').first()
-        supervisor_perfil = Perfil.query.filter_by(nome='Supervisor').first()
-
-        # --- Usuários ---
-        print("[1/9] Criando usuários...")
-        usuarios_data = [
-            {'nome': 'Carlos Mendes', 'email': 'carlos@apex.com.br', 'senha': 'eng123', 'perfil': supervisor_perfil},
-            {'nome': 'Fernanda Lima', 'email': 'fernanda@apex.com.br', 'senha': 'eng123', 'perfil': vendedor_perfil},
-            {'nome': 'Ricardo Santos', 'email': 'ricardo@apex.com.br', 'senha': 'eng123', 'perfil': vendedor_perfil},
-            {'nome': 'Ana Paula Costa', 'email': 'ana@apex.com.br', 'senha': 'eng123', 'perfil': vendedor_perfil},
-        ]
-
-        usuarios = []
-        for u in usuarios_data:
-            perfil = u['perfil'] or admin_perfil
-            if not perfil:
-                continue
-            existing = Usuario.query.filter_by(email=u['email']).first()
-            if not existing:
-                user = Usuario(
-                    nome=u['nome'],
-                    email=u['email'],
-                    perfil_id=perfil.id,
-                    ativo=True,
-                    deve_trocar_senha=False,
-                )
-                user.set_senha(u['senha'])
-                db.session.add(user)
-                usuarios.append(user)
-            else:
-                usuarios.append(existing)
-        db.session.commit()
-
-        admin = Usuario.query.filter_by(email='admin@example.com').first()
-        if admin:
-            usuarios.insert(0, admin)
-
-        print(f"   {len(usuarios)} usuários disponíveis")
-
-        # --- Serviços ---
-        print("[2/9] Criando serviços...")
-        servicos_data = [
-            {'nome': 'Projeto Mecânico', 'descricao': 'Desenvolvimento de projetos mecânicos completos', 'categoria': 'projeto'},
-            {'nome': 'Manutenção Preventiva', 'descricao': 'Plano de manutenção preventiva industrial', 'categoria': 'manutencao'},
-            {'nome': 'Manutenção Corretiva', 'descricao': 'Reparo e correção de equipamentos', 'categoria': 'manutencao'},
-            {'nome': 'Consultoria Técnica', 'descricao': 'Consultoria em engenharia mecânica e processos', 'categoria': 'consultoria'},
-            {'nome': 'Fabricação de Peças', 'descricao': 'Fabricação sob demanda de peças e componentes', 'categoria': 'fabricacao'},
-            {'nome': 'Inspeção Técnica', 'descricao': 'Inspeção e laudo técnico de equipamentos', 'categoria': 'inspecao'},
-            {'nome': 'Automação Industrial', 'descricao': 'Projetos de automação e controle de processos', 'categoria': 'projeto'},
-            {'nome': 'Reforma de Equipamentos', 'descricao': 'Reforma e retrofit de máquinas industriais', 'categoria': 'manutencao'},
-        ]
-
-        servicos = []
-        for s in servicos_data:
-            existing = Servico.query.filter_by(nome=s['nome']).first()
-            if not existing:
-                servico = Servico(**s)
-                db.session.add(servico)
-                servicos.append(servico)
-            else:
-                servicos.append(existing)
-        db.session.commit()
-        print(f"   {len(servicos)} serviços criados")
-
-        # --- Empresas ---
-        print("[3/9] Criando empresas...")
-        empresas_data = [
-            {'razao_social': 'Indústria Metalúrgica Rondon Ltda', 'nome_fantasia': 'MetalRondon', 'cnpj': '12.345.678/0001-90', 'ramo': 'Metalurgia', 'porte': 'Medio', 'cidade': 'Rondonópolis', 'estado': 'MT', 'telefone': '(66) 3423-1000', 'email': 'contato@metalrondon.com.br', 'endereco': 'Av. Industrial, 1500 - Distrito Industrial'},
-            {'razao_social': 'Agro Máquinas do Cerrado S.A.', 'nome_fantasia': 'AgroCerrado', 'cnpj': '23.456.789/0001-01', 'ramo': 'Máquinas Agrícolas', 'porte': 'Grande', 'cidade': 'Rondonópolis', 'estado': 'MT', 'telefone': '(66) 3411-2000', 'email': 'comercial@agrocerrado.com.br', 'endereco': 'Rod. BR-364 Km 12'},
-            {'razao_social': 'Frigorífico Boi Forte Ltda', 'nome_fantasia': 'Boi Forte', 'cnpj': '34.567.890/0001-12', 'ramo': 'Frigorífico', 'porte': 'Grande', 'cidade': 'Rondonópolis', 'estado': 'MT', 'telefone': '(66) 3439-3000', 'email': 'manutencao@boiforte.com.br', 'endereco': 'Av. Amazonas, 3200'},
-            {'razao_social': 'Cerealista Planalto ME', 'nome_fantasia': 'Planalto Grãos', 'cnpj': '45.678.901/0001-23', 'ramo': 'Armazém de Grãos', 'porte': 'Medio', 'cidade': 'Primavera do Leste', 'estado': 'MT', 'telefone': '(66) 3498-4000', 'email': 'operacao@planaltograos.com.br', 'endereco': 'Rua dos Armazéns, 800'},
-            {'razao_social': 'Transportadora Rota Sul Ltda', 'nome_fantasia': 'Rota Sul', 'cnpj': '56.789.012/0001-34', 'ramo': 'Transporte e Logística', 'porte': 'Medio', 'cidade': 'Rondonópolis', 'estado': 'MT', 'telefone': '(66) 3421-5000', 'email': 'frota@rotasul.com.br', 'endereco': 'Rod. MT-270 Km 5'},
-            {'razao_social': 'Usina de Etanol Verde Campo S.A.', 'nome_fantasia': 'Verde Campo Energia', 'cnpj': '67.890.123/0001-45', 'ramo': 'Usina Sucroalcooleira', 'porte': 'Grande', 'cidade': 'Campo Verde', 'estado': 'MT', 'telefone': '(66) 3419-6000', 'email': 'engenharia@verdecampo.com.br', 'endereco': 'Fazenda São Jorge, s/n'},
-            {'razao_social': 'Construtora Progresso Eireli', 'nome_fantasia': 'Progresso Construções', 'cnpj': '78.901.234/0001-56', 'ramo': 'Construção Civil', 'porte': 'Pequeno', 'cidade': 'Rondonópolis', 'estado': 'MT', 'telefone': '(66) 3423-7000', 'email': 'obras@progresso.com.br', 'endereco': 'Rua Poxoréu, 450 - Centro'},
-            {'razao_social': 'Mineração Serra Azul Ltda', 'nome_fantasia': 'Serra Azul', 'cnpj': '89.012.345/0001-67', 'ramo': 'Mineração', 'porte': 'Grande', 'cidade': 'Itiquira', 'estado': 'MT', 'telefone': '(66) 3491-8000', 'email': 'operacoes@serraazul.com.br', 'endereco': 'Estrada da Mina, Km 22'},
-        ]
-
-        empresas = []
-        for e in empresas_data:
-            existing = Empresa.query.filter_by(cnpj=e['cnpj']).first()
-            if not existing:
-                empresa = Empresa(**e)
-                db.session.add(empresa)
-                empresas.append(empresa)
-            else:
-                empresas.append(existing)
-        db.session.commit()
-        print(f"   {len(empresas)} empresas criadas")
-
-        # --- Contatos ---
-        print("[4/9] Criando contatos...")
-        contatos_data = [
-            {'nome': 'José Roberto Almeida', 'cargo': 'Diretor Industrial', 'email': 'jose.roberto@metalrondon.com.br', 'telefone': '(66) 3423-1001', 'celular': '(66) 99901-1001', 'principal': True, 'empresa_id': empresas[0].id},
-            {'nome': 'Marcos Vinícius', 'cargo': 'Gerente de Manutenção', 'email': 'marcos@metalrondon.com.br', 'telefone': '(66) 3423-1002', 'celular': '(66) 99902-1002', 'principal': False, 'empresa_id': empresas[0].id},
-            {'nome': 'Paulo Henrique Souza', 'cargo': 'Gerente de Operações', 'email': 'paulo@agrocerrado.com.br', 'telefone': '(66) 3411-2001', 'celular': '(66) 99903-2001', 'principal': True, 'empresa_id': empresas[1].id},
-            {'nome': 'Tatiana Oliveira', 'cargo': 'Engenheira de Produção', 'email': 'tatiana@agrocerrado.com.br', 'telefone': '(66) 3411-2002', 'celular': '(66) 99904-2002', 'principal': False, 'empresa_id': empresas[1].id},
-            {'nome': 'Eduardo Lima', 'cargo': 'Coordenador de Manutenção', 'email': 'eduardo@boiforte.com.br', 'telefone': '(66) 3439-3001', 'celular': '(66) 99905-3001', 'principal': True, 'empresa_id': empresas[2].id},
-            {'nome': 'Renata Campos', 'cargo': 'Gerente Operacional', 'email': 'renata@planaltograos.com.br', 'telefone': '(66) 3498-4001', 'celular': '(66) 99906-4001', 'principal': True, 'empresa_id': empresas[3].id},
-            {'nome': 'Antônio Pereira', 'cargo': 'Gerente de Frota', 'email': 'antonio@rotasul.com.br', 'telefone': '(66) 3421-5001', 'celular': '(66) 99907-5001', 'principal': True, 'empresa_id': empresas[4].id},
-            {'nome': 'Luciana Ferreira', 'cargo': 'Diretora de Engenharia', 'email': 'luciana@verdecampo.com.br', 'telefone': '(66) 3419-6001', 'celular': '(66) 99908-6001', 'principal': True, 'empresa_id': empresas[5].id},
-            {'nome': 'Fernando Gomes', 'cargo': 'Supervisor de Manutenção', 'email': 'fernando@verdecampo.com.br', 'telefone': '(66) 3419-6002', 'celular': '(66) 99909-6002', 'principal': False, 'empresa_id': empresas[5].id},
-            {'nome': 'Marcelo Dias', 'cargo': 'Engenheiro Civil', 'email': 'marcelo@progresso.com.br', 'telefone': '(66) 3423-7001', 'celular': '(66) 99910-7001', 'principal': True, 'empresa_id': empresas[6].id},
-            {'nome': 'Roberto Nascimento', 'cargo': 'Gerente de Mina', 'email': 'roberto@serraazul.com.br', 'telefone': '(66) 3491-8001', 'celular': '(66) 99911-8001', 'principal': True, 'empresa_id': empresas[7].id},
-            {'nome': 'Adriana Moreira', 'cargo': 'Engenheira Mecânica', 'email': 'adriana@serraazul.com.br', 'telefone': '(66) 3491-8002', 'celular': '(66) 99912-8002', 'principal': False, 'empresa_id': empresas[7].id},
-        ]
-
-        contatos_criados = 0
-        for c in contatos_data:
-            if not Contato.query.filter_by(email=c['email']).first():
-                db.session.add(Contato(**c))
-                contatos_criados += 1
-        db.session.commit()
-        print(f"   {contatos_criados} contatos criados")
-
-        # --- Leads ---
-        print("[5/9] Criando leads...")
-        leads_data = [
-            {'nome': 'José Roberto Almeida', 'email': 'jose.roberto@metalrondon.com.br', 'telefone': '(66) 99901-1001', 'empresa': 'MetalRondon', 'empresa_id': empresas[0].id, 'cargo': 'Diretor Industrial', 'interesse': 'Manutenção preventiva de ponte rolante', 'origem': 'Indicação', 'status': 'qualificado'},
-            {'nome': 'Paulo Henrique Souza', 'email': 'paulo@agrocerrado.com.br', 'telefone': '(66) 99903-2001', 'empresa': 'AgroCerrado', 'empresa_id': empresas[1].id, 'cargo': 'Gerente de Operações', 'interesse': 'Projeto de esteira transportadora', 'origem': 'Evento', 'status': 'convertido'},
-            {'nome': 'Eduardo Lima', 'email': 'eduardo@boiforte.com.br', 'telefone': '(66) 99905-3001', 'empresa': 'Boi Forte', 'empresa_id': empresas[2].id, 'cargo': 'Coord. Manutenção', 'interesse': 'Reforma de câmara fria', 'origem': 'Site', 'status': 'qualificado'},
-            {'nome': 'Renata Campos', 'email': 'renata@planaltograos.com.br', 'telefone': '(66) 99906-4001', 'empresa': 'Planalto Grãos', 'empresa_id': empresas[3].id, 'cargo': 'Gerente Operacional', 'interesse': 'Inspeção de silos', 'origem': 'LinkedIn', 'status': 'contatado'},
-            {'nome': 'Antônio Pereira', 'email': 'antonio@rotasul.com.br', 'telefone': '(66) 99907-5001', 'empresa': 'Rota Sul', 'empresa_id': empresas[4].id, 'cargo': 'Gerente de Frota', 'interesse': 'Manutenção de implementos rodoviários', 'origem': 'Indicação', 'status': 'novo'},
-            {'nome': 'Luciana Ferreira', 'email': 'luciana@verdecampo.com.br', 'telefone': '(66) 99908-6001', 'empresa': 'Verde Campo Energia', 'empresa_id': empresas[5].id, 'cargo': 'Diretora de Engenharia', 'interesse': 'Automação de caldeira', 'origem': 'Evento', 'status': 'convertido'},
-            {'nome': 'Marcelo Dias', 'email': 'marcelo@progresso.com.br', 'telefone': '(66) 99910-7001', 'empresa': 'Progresso Construções', 'empresa_id': empresas[6].id, 'cargo': 'Engenheiro Civil', 'interesse': 'Estruturas metálicas para galpão', 'origem': 'Site', 'status': 'contatado'},
-            {'nome': 'Roberto Nascimento', 'email': 'roberto@serraazul.com.br', 'telefone': '(66) 99911-8001', 'empresa': 'Serra Azul', 'empresa_id': empresas[7].id, 'cargo': 'Gerente de Mina', 'interesse': 'Reforma de britador', 'origem': 'Indicação', 'status': 'qualificado'},
-            {'nome': 'Adriana Moreira', 'email': 'adriana@serraazul.com.br', 'telefone': '(66) 99912-8002', 'empresa': 'Serra Azul', 'empresa_id': empresas[7].id, 'cargo': 'Engenheira Mecânica', 'interesse': 'Projeto de correia transportadora', 'origem': 'LinkedIn', 'status': 'novo'},
-            {'nome': 'Marcos Vinícius', 'email': 'marcos@metalrondon.com.br', 'telefone': '(66) 99902-1002', 'empresa': 'MetalRondon', 'empresa_id': empresas[0].id, 'cargo': 'Gerente de Manutenção', 'interesse': 'Contrato anual de manutenção', 'origem': 'Indicação', 'status': 'convertido'},
-            {'nome': 'Fernando Gomes', 'email': 'fernando@verdecampo.com.br', 'telefone': '(66) 99909-6002', 'empresa': 'Verde Campo Energia', 'empresa_id': empresas[5].id, 'cargo': 'Supervisor de Manutenção', 'interesse': 'Troca de tubulação de vapor', 'origem': 'Site', 'status': 'contatado'},
-            {'nome': 'Daniel Albuquerque', 'email': 'daniel@gmail.com', 'telefone': '(66) 99913-0001', 'empresa': '', 'cargo': 'Proprietário', 'interesse': 'Projeto de galpão industrial', 'origem': 'Site', 'status': 'novo'},
-            {'nome': 'Patrícia Monteiro', 'email': 'patricia@fazendasm.com.br', 'telefone': '(66) 99914-0002', 'empresa': 'Fazenda Santa Maria', 'cargo': 'Administradora', 'interesse': 'Sistema de irrigação', 'origem': 'Evento', 'status': 'perdido'},
-            {'nome': 'Gustavo Ribeiro', 'email': 'gustavo@ceramicamt.com.br', 'telefone': '(66) 99915-0003', 'empresa': 'Cerâmica MT', 'cargo': 'Diretor', 'interesse': 'Reforma de forno industrial', 'origem': 'LinkedIn', 'status': 'qualificado'},
-            {'nome': 'Cláudia Martins', 'email': 'claudia@laticiniobr.com.br', 'telefone': '(66) 99916-0004', 'empresa': 'Laticínio Brasil', 'cargo': 'Gerente de Produção', 'interesse': 'Projeto de linha de produção', 'origem': 'Indicação', 'status': 'novo'},
-        ]
-
-        leads = []
-        for l in leads_data:
-            existing = Lead.query.filter_by(email=l['email']).first()
-            if not existing:
-                lead = Lead(
-                    nome=l['nome'],
-                    email=l['email'],
-                    telefone=l.get('telefone'),
-                    empresa=l.get('empresa', ''),
-                    empresa_id=l.get('empresa_id'),
-                    cargo=l.get('cargo'),
-                    interesse=l.get('interesse'),
-                    origem=l.get('origem'),
-                    status=l.get('status', 'novo'),
-                    responsavel_id=random.choice(usuarios).id,
-                )
-                db.session.add(lead)
-                leads.append(lead)
-            else:
-                leads.append(existing)
-        db.session.commit()
-        print(f"   {len(leads)} leads criados")
-
-        # --- Pipeline e LeadEstagios ---
-        print("[6/9] Adicionando leads ao pipeline...")
-        pipeline = Pipeline.query.first()
-        estagios = Estagio.query.filter_by(pipeline_id=pipeline.id).order_by(Estagio.ordem).all()
-
-        distribuicao = {'novo': 0, 'contatado': 1, 'qualificado': 2, 'convertido': 5, 'perdido': 8}
-
-        lead_estagios_criados = 0
-        for lead in leads:
-            estagio_idx = distribuicao.get(lead.status, 0)
-            if estagio_idx < len(estagios):
-                existing = LeadEstagio.query.filter_by(lead_id=lead.id).first()
-                if not existing:
-                    le = LeadEstagio(
-                        lead_id=lead.id,
-                        estagio_id=estagios[estagio_idx].id,
-                        posicao=lead_estagios_criados,
-                    )
-                    db.session.add(le)
-                    lead_estagios_criados += 1
-        db.session.commit()
-        print(f"   {lead_estagios_criados} leads adicionados ao pipeline")
-
-        # --- Negócios ---
-        print("[7/9] Criando negócios...")
-        negocios_data = [
-            {'nome': 'Manutenção Ponte Rolante - MetalRondon', 'valor': 45000, 'tipo': 'unico', 'probabilidade': 80, 'status': 'aberto', 'lead_idx': 0, 'servico_idx': 1, 'estagio_idx': 3, 'dias_previsao': 30},
-            {'nome': 'Projeto Esteira Transportadora - AgroCerrado', 'valor': 120000, 'tipo': 'unico', 'probabilidade': 95, 'status': 'ganho', 'lead_idx': 1, 'servico_idx': 0, 'estagio_idx': 7, 'dias_previsao': -15},
-            {'nome': 'Reforma Câmara Fria - Boi Forte', 'valor': 78000, 'tipo': 'unico', 'probabilidade': 60, 'status': 'aberto', 'lead_idx': 2, 'servico_idx': 7, 'estagio_idx': 2, 'dias_previsao': 45},
-            {'nome': 'Inspeção Silos - Planalto Grãos', 'valor': 15000, 'tipo': 'unico', 'probabilidade': 40, 'status': 'aberto', 'lead_idx': 3, 'servico_idx': 5, 'estagio_idx': 1, 'dias_previsao': 20},
-            {'nome': 'Automação Caldeira - Verde Campo', 'valor': 250000, 'tipo': 'unico', 'probabilidade': 90, 'status': 'ganho', 'lead_idx': 5, 'servico_idx': 6, 'estagio_idx': 7, 'dias_previsao': -30},
-            {'nome': 'Contrato Manutenção Anual - MetalRondon', 'valor': 8500, 'tipo': 'recorrente', 'periodicidade': 'mensal', 'probabilidade': 100, 'status': 'ganho', 'lead_idx': 9, 'servico_idx': 1, 'estagio_idx': 7, 'dias_previsao': -60},
-            {'nome': 'Estrutura Metálica Galpão - Progresso', 'valor': 95000, 'tipo': 'unico', 'probabilidade': 30, 'status': 'aberto', 'lead_idx': 6, 'servico_idx': 4, 'estagio_idx': 1, 'dias_previsao': 60},
-            {'nome': 'Reforma Britador - Serra Azul', 'valor': 180000, 'tipo': 'unico', 'probabilidade': 70, 'status': 'aberto', 'lead_idx': 7, 'servico_idx': 7, 'estagio_idx': 3, 'dias_previsao': 40},
-            {'nome': 'Correia Transportadora - Serra Azul', 'valor': 65000, 'tipo': 'unico', 'probabilidade': 20, 'status': 'aberto', 'lead_idx': 8, 'servico_idx': 0, 'estagio_idx': 0, 'dias_previsao': 90},
-            {'nome': 'Tubulação Vapor - Verde Campo', 'valor': 55000, 'tipo': 'unico', 'probabilidade': 50, 'status': 'aberto', 'lead_idx': 10, 'servico_idx': 2, 'estagio_idx': 2, 'dias_previsao': 35},
-            {'nome': 'Manutenção Implementos - Rota Sul', 'valor': 32000, 'tipo': 'unico', 'probabilidade': 15, 'status': 'perdido', 'lead_idx': 4, 'servico_idx': 2, 'estagio_idx': min(8, len(estagios)-1), 'dias_previsao': -10},
-            {'nome': 'Sistema Irrigação - Fazenda SM', 'valor': 42000, 'tipo': 'unico', 'probabilidade': 10, 'status': 'perdido', 'lead_idx': 12, 'servico_idx': 0, 'estagio_idx': min(8, len(estagios)-1), 'dias_previsao': -20},
-            {'nome': 'Reforma Forno Industrial - Cerâmica MT', 'valor': 88000, 'tipo': 'unico', 'probabilidade': 65, 'status': 'aberto', 'lead_idx': 13, 'servico_idx': 7, 'estagio_idx': 3, 'dias_previsao': 50},
-        ]
-
-        negocios = []
-        for n in negocios_data:
-            lead = leads[n['lead_idx']] if n['lead_idx'] < len(leads) else leads[0]
-            servico = servicos[n['servico_idx']] if n['servico_idx'] < len(servicos) else servicos[0]
-            estagio = estagios[n['estagio_idx']] if n['estagio_idx'] < len(estagios) else estagios[-1]
-
-            existing = Negocio.query.filter_by(nome=n['nome']).first()
-            if not existing:
-                negocio = Negocio(
-                    nome=n['nome'],
-                    descricao=f"Negócio referente a {n['nome']}",
-                    valor=n['valor'],
-                    tipo=n['tipo'],
-                    periodicidade=n.get('periodicidade'),
-                    probabilidade=n['probabilidade'],
-                    data_previsao_fechamento=datetime.utcnow().date() + timedelta(days=n['dias_previsao']),
-                    status=n['status'],
-                    lead_id=lead.id,
-                    pipeline_id=pipeline.id,
-                    estagio_id=estagio.id,
-                    servico_id=servico.id,
-                    responsavel_id=random.choice(usuarios).id,
-                    criado_por_id=usuarios[0].id,
-                )
-                if n['status'] in ('ganho', 'perdido'):
-                    negocio.data_fechamento = datetime.utcnow() - timedelta(days=abs(n['dias_previsao']))
-                if n['status'] == 'perdido':
-                    negocio.motivo = random.choice([
-                        'Cliente optou por concorrente',
-                        'Orçamento acima do esperado',
-                        'Projeto cancelado pelo cliente',
-                        'Prazo não atendeu',
-                    ])
-                db.session.add(negocio)
-                negocios.append(negocio)
-            else:
-                negocios.append(existing)
-        db.session.commit()
-        print(f"   {len(negocios)} negócios criados")
-
-        # --- Atividades ---
-        print("[8/9] Criando atividades...")
-        tipos_atividade = ['reunião', 'chamada', 'email', 'visita_tecnica', 'proposta']
-        atividades_criadas = 0
-
-        for negocio in negocios[:8]:
-            for i in range(random.randint(1, 4)):
-                tipo = random.choice(tipos_atividade)
-                titulos = {
-                    'reunião': f'Reunião com cliente',
-                    'chamada': 'Ligação de follow-up',
-                    'email': 'Envio de proposta por email',
-                    'visita_tecnica': 'Visita técnica no local',
-                    'proposta': 'Apresentação de proposta comercial',
-                }
-                dias_atras = random.randint(1, 60)
-                status = random.choice(['concluida', 'concluida', 'concluida', 'pendente'])
-
-                atividade = AtividadeNegocio(
-                    tipo=tipo,
-                    titulo=titulos.get(tipo, 'Atividade'),
-                    descricao=f'Atividade relacionada ao negócio {negocio.nome}',
-                    data_agendada=datetime.utcnow() - timedelta(days=dias_atras),
-                    status=status,
-                    negocio_id=negocio.id,
-                    responsavel_id=random.choice(usuarios).id,
-                )
-                if status == 'concluida':
-                    atividade.data_conclusao = atividade.data_agendada + timedelta(hours=random.randint(1, 48))
-                    atividade.resultado = random.choice([
-                        'Cliente demonstrou interesse',
-                        'Alinhamento técnico realizado',
-                        'Proposta aprovada internamente',
-                        'Aguardando retorno do cliente',
-                        'Visita técnica concluída com sucesso',
-                    ])
-                db.session.add(atividade)
-                atividades_criadas += 1
-
-        db.session.commit()
-        print(f"   {atividades_criadas} atividades criadas")
-
-        # --- Projetos ---
-        print("[9/9] Criando projetos...")
-
-        negocio_esteira = Negocio.query.filter_by(nome='Projeto Esteira Transportadora - AgroCerrado').first()
-        negocio_caldeira = Negocio.query.filter_by(nome='Automação Caldeira - Verde Campo').first()
-        negocio_manutencao = Negocio.query.filter_by(nome='Contrato Manutenção Anual - MetalRondon').first()
-
-        projetos_data = [
-            {
-                'nome': 'Esteira Transportadora - AgroCerrado',
-                'descricao': 'Projeto completo de esteira transportadora para linha de montagem. Inclui projeto mecânico, fabricação e instalação.',
-                'status': 'em_andamento', 'prioridade': 'alta',
-                'data_inicio': datetime.utcnow().date() - timedelta(days=20),
-                'data_previsao_fim': datetime.utcnow().date() + timedelta(days=40),
-                'valor_contrato': 120000, 'negocio': negocio_esteira, 'empresa_idx': 1,
-                'tarefas': [
-                    {'titulo': 'Levantamento dimensional no local', 'status': 'concluida', 'prioridade': 'alta', 'dias_prazo': -15},
-                    {'titulo': 'Elaboração do projeto mecânico 3D', 'status': 'concluida', 'prioridade': 'alta', 'dias_prazo': -5},
-                    {'titulo': 'Aprovação do projeto pelo cliente', 'status': 'concluida', 'prioridade': 'media', 'dias_prazo': -2},
-                    {'titulo': 'Compra de materiais e componentes', 'status': 'em_andamento', 'prioridade': 'alta', 'dias_prazo': 5,
-                     'checklist': ['Aço estrutural SAE 1020', 'Rolamentos SKF', 'Motor WEG 5CV', 'Correia transportadora 800mm', 'Parafusos e fixadores']},
-                    {'titulo': 'Fabricação da estrutura metálica', 'status': 'em_andamento', 'prioridade': 'alta', 'dias_prazo': 15},
-                    {'titulo': 'Usinagem dos eixos e rolos', 'status': 'a_fazer', 'prioridade': 'media', 'dias_prazo': 20},
-                    {'titulo': 'Montagem do conjunto', 'status': 'a_fazer', 'prioridade': 'media', 'dias_prazo': 28},
-                    {'titulo': 'Pintura e acabamento', 'status': 'a_fazer', 'prioridade': 'baixa', 'dias_prazo': 32},
-                    {'titulo': 'Transporte e instalação no cliente', 'status': 'a_fazer', 'prioridade': 'alta', 'dias_prazo': 36},
-                    {'titulo': 'Testes de funcionamento e entrega', 'status': 'a_fazer', 'prioridade': 'critica', 'dias_prazo': 40},
-                ],
-            },
-            {
-                'nome': 'Automação Caldeira - Verde Campo Energia',
-                'descricao': 'Projeto de automação e controle da caldeira principal. Inclui instrumentação, programação de CLP e comissionamento.',
-                'status': 'planejamento', 'prioridade': 'critica',
-                'data_inicio': datetime.utcnow().date() + timedelta(days=5),
-                'data_previsao_fim': datetime.utcnow().date() + timedelta(days=90),
-                'valor_contrato': 250000, 'negocio': negocio_caldeira, 'empresa_idx': 5,
-                'tarefas': [
-                    {'titulo': 'Análise P&ID da caldeira existente', 'status': 'em_andamento', 'prioridade': 'alta', 'dias_prazo': 10},
-                    {'titulo': 'Especificação de instrumentos de campo', 'status': 'a_fazer', 'prioridade': 'alta', 'dias_prazo': 20},
-                    {'titulo': 'Projeto elétrico dos painéis de controle', 'status': 'a_fazer', 'prioridade': 'alta', 'dias_prazo': 30},
-                    {'titulo': 'Programação do CLP Siemens S7-1500', 'status': 'a_fazer', 'prioridade': 'critica', 'dias_prazo': 45,
-                     'checklist': ['Lógica de intertravamento', 'Malhas de controle PID', 'Telas do IHM', 'Comunicação Profinet', 'Alarmes e histórico']},
-                    {'titulo': 'Configuração do sistema SCADA', 'status': 'a_fazer', 'prioridade': 'alta', 'dias_prazo': 55},
-                    {'titulo': 'Montagem e cabeamento em campo', 'status': 'a_fazer', 'prioridade': 'media', 'dias_prazo': 65},
-                    {'titulo': 'Comissionamento e testes a frio', 'status': 'a_fazer', 'prioridade': 'critica', 'dias_prazo': 75},
-                    {'titulo': 'Testes a quente e ajuste de malhas', 'status': 'a_fazer', 'prioridade': 'critica', 'dias_prazo': 85},
-                    {'titulo': 'Treinamento da equipe de operação', 'status': 'a_fazer', 'prioridade': 'media', 'dias_prazo': 88},
-                ],
-            },
-            {
-                'nome': 'Manutenção Preventiva Anual - MetalRondon',
-                'descricao': 'Contrato anual de manutenção preventiva dos equipamentos industriais.',
-                'status': 'em_andamento', 'prioridade': 'media',
-                'data_inicio': datetime.utcnow().date() - timedelta(days=60),
-                'data_previsao_fim': datetime.utcnow().date() + timedelta(days=305),
-                'valor_contrato': 102000, 'negocio': negocio_manutencao, 'empresa_idx': 0,
-                'tarefas': [
-                    {'titulo': 'Inspeção mensal - Ponte Rolante 20t', 'status': 'concluida', 'prioridade': 'alta', 'dias_prazo': -30},
-                    {'titulo': 'Troca de cabos de aço da ponte rolante', 'status': 'concluida', 'prioridade': 'critica', 'dias_prazo': -25},
-                    {'titulo': 'Manutenção compressor Atlas Copco GA30', 'status': 'concluida', 'prioridade': 'media', 'dias_prazo': -20},
-                    {'titulo': 'Revisão sistema pneumático geral', 'status': 'em_revisao', 'prioridade': 'media', 'dias_prazo': 2,
-                     'checklist': ['Verificar válvulas solenoides', 'Testar cilindros pneumáticos', 'Inspecionar mangueiras', 'Calibrar reguladores de pressão']},
-                    {'titulo': 'Inspeção mensal - Ponte Rolante 20t (Mar)', 'status': 'em_andamento', 'prioridade': 'alta', 'dias_prazo': 5},
-                    {'titulo': 'Lubrificação geral de equipamentos', 'status': 'a_fazer', 'prioridade': 'media', 'dias_prazo': 10},
-                    {'titulo': 'Análise de vibração dos motores', 'status': 'a_fazer', 'prioridade': 'alta', 'dias_prazo': 20},
-                ],
-            },
-        ]
-
-        projetos_criados = 0
-        for p_data in projetos_data:
-            if Projeto.query.filter_by(nome=p_data['nome']).first():
-                continue
-
-            empresa = empresas[p_data['empresa_idx']] if p_data['empresa_idx'] < len(empresas) else None
-            projeto = Projeto(
-                nome=p_data['nome'],
-                descricao=p_data['descricao'],
-                status=p_data['status'],
-                prioridade=p_data['prioridade'],
-                data_inicio=p_data['data_inicio'],
-                data_previsao_fim=p_data['data_previsao_fim'],
-                valor_contrato=p_data['valor_contrato'],
-                negocio_id=p_data['negocio'].id if p_data['negocio'] else None,
-                empresa_id=empresa.id if empresa else None,
-                gerente_id=random.choice(usuarios).id,
-                criado_por_id=usuarios[0].id,
-            )
-            db.session.add(projeto)
-            db.session.flush()
-
-            for i, t_data in enumerate(p_data['tarefas']):
-                tarefa = Tarefa(
-                    titulo=t_data['titulo'],
-                    status=t_data['status'],
-                    prioridade=t_data['prioridade'],
-                    data_prazo=datetime.utcnow().date() + timedelta(days=t_data['dias_prazo']),
-                    ordem=i,
-                    projeto_id=projeto.id,
-                    responsavel_id=random.choice(usuarios).id,
-                )
-                if t_data['status'] == 'concluida':
-                    tarefa.data_conclusao = datetime.utcnow() - timedelta(days=abs(t_data['dias_prazo']))
-                db.session.add(tarefa)
-                db.session.flush()
-
-                if 'checklist' in t_data:
-                    for j, item_text in enumerate(t_data['checklist']):
-                        db.session.add(ChecklistItem(
-                            descricao=item_text,
-                            concluido=random.random() < 0.4,
-                            ordem=j,
-                            tarefa_id=tarefa.id,
-                        ))
-
-            projeto.atualizar_percentual()
-            projetos_criados += 1
-
-        db.session.commit()
-        print(f"   {projetos_criados} projetos criados")
-
-        print("\n=== SEED CONCLUÍDO ===")
-        print(f"  Usuários:    {Usuario.query.count()}")
-        print(f"  Serviços:    {Servico.query.count()}")
-        print(f"  Empresas:    {Empresa.query.count()}")
-        print(f"  Contatos:    {Contato.query.count()}")
-        print(f"  Leads:       {Lead.query.count()}")
-        print(f"  Negócios:    {Negocio.query.count()}")
-        print(f"  Atividades:  {AtividadeNegocio.query.count()}")
-        print(f"  Projetos:    {Projeto.query.count()}")
-        print(f"  Tarefas:     {Tarefa.query.count()}")
-        print(f"\n  Login admin: admin@example.com")
-        print(f"  Workspace:   apex")
+        print("\n=== SEED CONCLUIDO ===")
+        print(f"Tenant:       {Tenant.query.count()}")
+        print(f"Usuarios:     {Usuario.query.count()}")
+        print(f"Empresas:     {Empresa.query.count()}")
+        print(f"Leads:        {Lead.query.count()}")
+        print(f"Negocios:     {Negocio.query.count()}")
+        print(f"Projetos:     {Projeto.query.count()}")
+        print(f"Ativos:       {Ativo.query.count()}")
+        print(f"Contratos:    {ContratoAMC.query.count()}")
+        print(f"Ordens:       {OrdemServico.query.count()}")
+        print(f"Inspecoes:    {Inspecao.query.count()}")
+        print(f"Relatorios:   {RelatorioTecnico.query.count()}")
+        print("\nLogin admin:")
+        print("  Workspace: apex")
+        print("  Email:     admin@example.com")
+        print("  Senha:     admin@example.com")
+        print("\nUsuarios de exemplo:")
+        print("  carlos@apex.com.br / eng123")
+        print("  fernanda@apex.com.br / eng123")
+        print("  mariana@apex.com.br / eng123")
+        print("  roberto@apex.com.br / eng123")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     seed()
