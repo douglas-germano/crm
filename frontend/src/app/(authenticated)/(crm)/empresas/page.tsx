@@ -7,7 +7,7 @@ import { cn, formatCNPJ, formatCurrency } from '@/lib/utils'
 import { ContratoAMC } from '@/types'
 import { useToast } from '@/contexts/toast-context'
 import {
-  Plus, Search, Phone, Mail, MapPin, Globe,
+  Plus, Search, Phone, Mail,
   Loader2, Edit, User, Users, FileText, Handshake,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
@@ -21,7 +21,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet'
@@ -312,7 +311,7 @@ export default function EmpresasPage() {
         />
       </div>
 
-      {/* Card Grid */}
+      {/* Company List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -323,89 +322,84 @@ export default function EmpresasPage() {
           <p className="text-sm mt-1">Cadastre uma nova empresa para comecar</p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {empresas.map((empresa) => (
-            <Card key={empresa.id} className="overflow-hidden">
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">
-                      {empresa.nome_fantasia || empresa.razao_social}
-                    </p>
-                    {empresa.nome_fantasia && empresa.razao_social && (
-                      <p className="text-xs text-muted-foreground truncate">{empresa.razao_social}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {empresa.ramo && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5">{empresa.ramo}</Badge>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => openEditModal(empresa)}
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-
-                {empresa.cnpj && (
-                  <p className="text-xs text-muted-foreground font-mono mb-2">{formatCNPJ(empresa.cnpj)}</p>
-                )}
-
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  {(empresa.cidade || empresa.estado) && (
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                      <span>{[empresa.cidade, empresa.estado].filter(Boolean).join(' / ')}</span>
-                    </div>
-                  )}
-                  {empresa.telefone && (
-                    <div className="flex items-center gap-1.5">
-                      <Phone className="h-3 w-3 flex-shrink-0" />
-                      <span>{empresa.telefone}</span>
-                    </div>
-                  )}
-                  {empresa.email && (
-                    <div className="flex items-center gap-1.5">
-                      <Mail className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{empresa.email}</span>
-                    </div>
-                  )}
-                  {empresa.website && (
-                    <div className="flex items-center gap-1.5">
-                      <Globe className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{empresa.website}</span>
-                    </div>
-                  )}
-                </div>
-
-                <Separator className="my-3" />
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Users className="h-3 w-3" />
-                    <span>{empresa.total_contatos ?? 0} contatos</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => {
-                      setSelectedEmpresa(empresa)
-                      setShowContatoForm(false)
-                      setContatoForm({ ...EMPTY_CONTATO })
-                    }}
-                  >
-                    Ver detalhes
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <Card className="overflow-hidden bg-white">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead>CNPJ</TableHead>
+                  <TableHead>Localização</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Ramo</TableHead>
+                  <TableHead>Contatos</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {empresas.map((empresa) => (
+                  <TableRow key={empresa.id}>
+                    <TableCell className="min-w-[260px]">
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {empresa.nome_fantasia || empresa.razao_social}
+                        </div>
+                        {empresa.nome_fantasia && empresa.razao_social && (
+                          <div className="mt-0.5 text-xs text-muted-foreground">{empresa.razao_social}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                      {empresa.cnpj ? formatCNPJ(empresa.cnpj) : '—'}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {[empresa.cidade, empresa.estado].filter(Boolean).join(' / ') || '—'}
+                    </TableCell>
+                    <TableCell className="min-w-[220px]">
+                      <div className="space-y-0.5 text-sm">
+                        <div>{empresa.telefone || '—'}</div>
+                        {empresa.email && <div className="text-xs text-muted-foreground">{empresa.email}</div>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {empresa.ramo ? (
+                        <Badge variant="secondary">{empresa.ramo}</Badge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {empresa.total_contatos ?? 0}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal(empresa)}
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedEmpresa(empresa)
+                            setShowContatoForm(false)
+                            setContatoForm({ ...EMPTY_CONTATO })
+                          }}
+                        >
+                          Detalhes
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       )}
 
       {/* Pagination */}

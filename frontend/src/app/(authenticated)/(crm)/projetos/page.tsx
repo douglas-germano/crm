@@ -6,7 +6,7 @@ import useSWR from 'swr'
 import api from '@/lib/api'
 import { formatCurrency } from '@/lib/utils'
 import {
-  Plus, Loader2, Pencil, Trash2, Calendar, Users as UsersIcon,
+  Plus, Loader2, Pencil, Trash2,
   FolderKanban, Search, Filter
 } from 'lucide-react'
 
@@ -23,6 +23,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 
 const fetcher = (url: string) => api.get(url).then(r => r.data)
 
@@ -223,7 +226,7 @@ export default function ProjetosPage() {
         </Select>
       </div>
 
-      {/* Projects Grid */}
+      {/* Projects List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -244,107 +247,103 @@ export default function ProjetosPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {paginated.map((projeto) => (
-            <Card
-              key={projeto.id}
-              className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-brand-300"
-              onClick={() => router.push(`/projetos/detalhe?id=${projeto.id}`)}
-            >
-              <CardContent className="p-5">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0 mr-3">
-                    <h3 className="font-semibold text-sm truncate group-hover:text-brand-700 transition-colors">
-                      {projeto.nome}
-                    </h3>
-                    {projeto.empresa_nome && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {projeto.empresa_nome}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Badge variant="outline" className={PRIORIDADE_COLORS[projeto.prioridade] || ''}>
-                      {PRIORIDADE_LABELS[projeto.prioridade] || projeto.prioridade}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Status Badge */}
-                <div className="mb-4">
-                  <Badge variant="outline" className={STATUS_COLORS[projeto.status] || ''}>
-                    {STATUS_LABELS[projeto.status] || projeto.status}
-                  </Badge>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">Progresso</span>
-                    <span className="text-xs font-semibold text-brand-700">
-                      {Math.round(projeto.percentual_concluido)}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-steel-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-brand-500 to-accent-500"
-                      style={{ width: `${projeto.percentual_concluido}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Meta */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <div className="flex items-center gap-3">
-                    {projeto.data_previsao_fim && (
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(projeto.data_previsao_fim)}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <FolderKanban className="h-3 w-3" />
-                      {projeto.total_tarefas_concluidas}/{projeto.total_tarefas}
-                    </span>
-                  </div>
-                  {projeto.gerente_nome && (
-                    <span className="flex items-center gap-1">
-                      <UsersIcon className="h-3 w-3" />
-                      {projeto.gerente_nome}
-                    </span>
-                  )}
-                </div>
-
-                {/* Value */}
-                {projeto.valor_contrato > 0 && (
-                  <div className="mt-3 pt-3 border-t border-steel-100">
-                    <span className="text-sm font-semibold text-brand-700">
-                      {formatCurrency(projeto.valor_contrato)}
-                    </span>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="mt-3 pt-3 border-t border-steel-100 flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setDeletingProjeto(projeto)
-                      setApiError('')
-                      setShowDeleteModal(true)
-                    }}
+        <Card className="overflow-hidden bg-white">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Projeto</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Prioridade</TableHead>
+                  <TableHead>Progresso</TableHead>
+                  <TableHead>Prazo</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.map((projeto) => (
+                  <TableRow
+                    key={projeto.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/projetos/detalhe?id=${projeto.id}`)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    <TableCell className="min-w-[260px]">
+                      <div>
+                        <div className="font-medium text-foreground">{projeto.nome}</div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">
+                          {projeto.empresa_nome || 'Sem empresa vinculada'}
+                          {projeto.gerente_nome ? ` · ${projeto.gerente_nome}` : ''}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={STATUS_COLORS[projeto.status] || ''}>
+                        {STATUS_LABELS[projeto.status] || projeto.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={PRIORIDADE_COLORS[projeto.prioridade] || ''}>
+                        {PRIORIDADE_LABELS[projeto.prioridade] || projeto.prioridade}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="min-w-[180px]">
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-24 overflow-hidden rounded-full bg-steel-100">
+                          <div
+                            className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                            style={{ width: `${projeto.percentual_concluido}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-brand-700">
+                          {Math.round(projeto.percentual_concluido)}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {projeto.total_tarefas_concluidas}/{projeto.total_tarefas}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(projeto.data_previsao_fim)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {projeto.valor_contrato > 0 ? formatCurrency(projeto.valor_contrato) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/projetos/detalhe?id=${projeto.id}`)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Abrir</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDeletingProjeto(projeto)
+                            setApiError('')
+                            setShowDeleteModal(true)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Excluir</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       )}
 
       {/* Pagination */}
