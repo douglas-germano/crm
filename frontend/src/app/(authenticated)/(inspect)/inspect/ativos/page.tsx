@@ -38,6 +38,7 @@ const STATUS_CLASS: Record<string, string> = {
 export default function AtivosInspectPage() {
   const { toast } = useToast();
   const [search, setSearch] = useState('');
+  const [empresaFilter, setEmpresaFilter] = useState('todos');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [openModal, setOpenModal] = useState(false);
   const [editingAtivo, setEditingAtivo] = useState<Ativo | null>(null);
@@ -46,7 +47,11 @@ export default function AtivosInspectPage() {
   const [apiError, setApiError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const { data: rawAtivos, mutate, isLoading } = useSWR('/api/v1/inspect/ativos', fetcher);
+  const ativosUrl = empresaFilter === 'todos'
+    ? '/api/v1/inspect/ativos'
+    : `/api/v1/inspect/ativos?empresa_id=${empresaFilter}`;
+
+  const { data: rawAtivos, mutate, isLoading } = useSWR(ativosUrl, fetcher);
   const { data: empresasResp } = useSWR('/api/v1/crm/empresas?per_page=200', fetcher);
 
   const ativos: Ativo[] = Array.isArray(rawAtivos) ? rawAtivos : rawAtivos?.ativos ?? [];
@@ -70,7 +75,10 @@ export default function AtivosInspectPage() {
 
   const resetForm = () => {
     setEditingAtivo(null);
-    setForm({ ...EMPTY_FORM });
+    setForm({
+      ...EMPTY_FORM,
+      empresa_id: empresaFilter === 'todos' ? '' : empresaFilter,
+    });
     setApiError('');
   };
 
@@ -181,6 +189,19 @@ export default function AtivosInspectPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <CardTitle>Inventário técnico</CardTitle>
             <div className="flex flex-col gap-2 sm:flex-row">
+              <Select value={empresaFilter} onValueChange={setEmpresaFilter}>
+                <SelectTrigger className="w-full bg-white sm:w-[240px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as empresas</SelectItem>
+                  {empresas.map((empresa) => (
+                    <SelectItem key={empresa.id} value={String(empresa.id)}>
+                      {empresa.razao_social}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
