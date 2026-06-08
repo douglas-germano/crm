@@ -100,7 +100,7 @@ export default function CalendarioPage() {
           title: p.nome,
           type: 'tarefa',
           status: p.status,
-          href: `/projetos/detalhe?id=${p.id}`,
+          href: `/inspect/projetos/detalhe?id=${p.id}`,
           subtitle: 'Prazo previsto',
         });
       }

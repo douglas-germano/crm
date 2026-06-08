@@ -156,7 +156,7 @@ export default function RelatoriosPage() {
               </Table>
               <div className="border-t p-4">
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/projetos">
+                  <Link href="/inspect/projetos">
                     Ver todos
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>

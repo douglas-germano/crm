@@ -55,7 +55,6 @@ const crmNavSections = [
   {
     label: 'Relacionamento',
     links: [
-      { href: '/projetos',   label: 'Projetos',   icon: FolderKanban },
       { href: '/empresas',   label: 'Empresas',   icon: Building2    },
       { href: '/calendario', label: 'Calendário', icon: Calendar     },
     ],
@@ -80,6 +79,7 @@ const inspectNavSections = [
   {
     label: 'Gestão Técnica',
     links: [
+      { href: '/inspect/projetos', label: 'Projetos', icon: FolderKanban },
       { href: '/inspect/clientes', label: 'Inventário por Cliente', icon: LibraryBig },
       { href: '/inspect/ativos', label: 'Ativos', icon: Box },
       { href: '/contratos-amc', label: 'Contratos AMC', icon: ShieldCheck },

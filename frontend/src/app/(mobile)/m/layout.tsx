@@ -14,6 +14,7 @@ const TITLES: Record<string, string> = {
   '/m/crm/negocios': 'Negócios',
   '/m/inspect/ordens': 'Ordens de Campo',
   '/m/inspect/ordens/detalhe': 'Detalhe da Ordem',
+  '/m/inspect/projetos': 'Projetos',
   '/m/inspect/ativos': 'Ativos',
   '/m/inspect/inspecoes': 'Inspeções',
   '/m/inspect/inspecoes/campo': 'Inspeção de Campo',

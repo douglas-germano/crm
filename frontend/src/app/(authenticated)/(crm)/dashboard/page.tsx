@@ -295,7 +295,7 @@ export default function DashboardPage() {
           title: p.nome,
           type: 'tarefa',
           status: p.status,
-          href: `/projetos/detalhe?id=${p.id}`,
+          href: `/inspect/projetos/detalhe?id=${p.id}`,
           subtitle: 'Prazo previsto',
         });
       }
@@ -915,7 +915,7 @@ export default function DashboardPage() {
                         <FolderKanban className="h-4 w-4 text-primary" />
                         Projetos
                       </h3>
-                      <Link href="/projetos" className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                      <Link href="/inspect/projetos" className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
                         Ver projetos <ArrowRight className="h-3 w-3" />
                       </Link>
                     </div>

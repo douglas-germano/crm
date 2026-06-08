@@ -17,13 +17,13 @@ const CRM_TABS = [
   { href: '/m/crm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/m/crm/leads', label: 'Leads', icon: Users },
   { href: '/m/crm/negocios', label: 'Negócios', icon: Briefcase },
-  { href: '/m/crm/projetos', label: 'Projetos', icon: FolderKanban },
   { href: '/m/modulos', label: 'Módulos', icon: Grid2X2 },
 ] as const;
 
 const INSPECT_TABS = [
   { href: '/m/inspect/ordens', label: 'Ordens', icon: ClipboardList },
   { href: '/m/inspect/inspecoes', label: 'Inspeções', icon: ClipboardCheck },
+  { href: '/m/inspect/projetos', label: 'Projetos', icon: FolderKanban },
   { href: '/m/inspect/ativos', label: 'Ativos', icon: Box },
   { href: '/m/modulos', label: 'Módulos', icon: Grid2X2 },
 ] as const;

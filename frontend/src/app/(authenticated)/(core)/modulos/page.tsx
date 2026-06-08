@@ -9,14 +9,14 @@ const modules = [
   {
     href: '/dashboard',
     name: 'Apex CRM',
-    label: 'Relacionamento, vendas, negócios e projetos',
+    label: 'Relacionamento, vendas e negócios',
     icon: BarChart3,
     accent: 'bg-brand-500',
   },
   {
     href: '/inspect/ordens',
     name: 'Apex Inspect',
-    label: 'Campo, inspeções, ordens de serviço e relatórios técnicos',
+    label: 'Campo, projetos, inspeções, ordens de serviço e relatórios técnicos',
     icon: ClipboardCheck,
     accent: 'bg-emerald-600',
   },
