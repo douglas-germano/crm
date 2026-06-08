@@ -55,6 +55,10 @@ def create_app(config_name=None):
             'environment': config_name,
         }, 200
 
+    from app.docs.swagger import init_swagger
+
+    init_swagger(app)
+
     from flask_jwt_extended import verify_jwt_in_request, get_jwt
     from flask_jwt_extended.exceptions import NoAuthorizationError
     from sqlalchemy import text
