@@ -5,6 +5,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import type { DashboardStats } from '@/types';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Users, Briefcase, Wallet, TrendingUp,
   ClipboardCheck, FolderKanban, Loader2,
@@ -68,12 +69,16 @@ export default function MobileDashboardPage() {
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 rounded-lg border border-steel-100 bg-white p-4 shadow-sm transition-transform active:scale-95"
+              className="block transition-transform active:scale-95"
             >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bg} ${fg}`}>
-                <Icon size={20} />
-              </div>
-              <span className="text-sm font-medium text-steel-900">{label}</span>
+              <Card className="bg-white">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bg} ${fg}`}>
+                    <Icon size={20} />
+                  </div>
+                  <span className="text-sm font-medium text-steel-900">{label}</span>
+                </CardContent>
+              </Card>
             </Link>
           ))}
         </div>
@@ -92,10 +97,12 @@ function StatCard({
   small?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-steel-100 bg-white p-4 shadow-sm">
-      <div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-lg ${bg}`}>{icon}</div>
-      <p className={`font-bold leading-none text-steel-950 ${small ? 'text-base' : 'text-2xl'}`}>{value}</p>
-      <p className="mt-1 text-xs text-steel-400">{label}</p>
-    </div>
+    <Card className="bg-white">
+      <CardContent className="p-4">
+        <div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-lg ${bg}`}>{icon}</div>
+        <p className={`font-bold leading-none text-steel-950 ${small ? 'text-base' : 'text-2xl'}`}>{value}</p>
+        <p className="mt-1 text-xs text-steel-400">{label}</p>
+      </CardContent>
+    </Card>
   );
 }

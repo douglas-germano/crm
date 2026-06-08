@@ -262,19 +262,17 @@ export default function MobileInspecaoCampoPage() {
                     {STATUS_OPTIONS.map(({ value, label, icon: Icon }) => {
                       const active = resposta?.resposta === value;
                       return (
-                        <button
+                        <Button
                           key={value}
                           type="button"
+                          size="sm"
+                          variant={active ? 'default' : 'outline'}
                           onClick={() => updateResposta(item.id, { resposta: value })}
-                          className={`flex h-10 items-center justify-center gap-1 rounded-md border text-xs font-semibold transition ${
-                            active
-                              ? 'border-brand-500 bg-brand-500 text-white'
-                              : 'border-steel-200 bg-white text-steel-600'
-                          }`}
+                          className="h-10 px-2 text-xs"
                         >
                           <Icon className="h-3.5 w-3.5" />
                           {label}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>

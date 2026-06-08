@@ -4,6 +4,9 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import api from '@/lib/api';
 import type { Lead } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Search, Loader2, Phone } from 'lucide-react';
 
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
@@ -43,24 +46,25 @@ export default function MobileLeadsPage() {
       <div className="space-y-3 border-b border-steel-100 bg-white px-4 pb-3 pt-4">
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
-          <input
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar lead..."
-            className="h-10 w-full rounded-lg border border-steel-200 bg-steel-50 pl-9 pr-4 text-sm outline-none focus:border-brand-500"
+            className="h-10 bg-steel-50 pl-9"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
           {FILTERS.map((f) => (
-            <button
+            <Button
               key={f}
+              type="button"
+              size="sm"
+              variant={status === f ? 'default' : 'secondary'}
               onClick={() => setStatus(f)}
-              className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                status === f ? 'bg-brand-500 text-white' : 'bg-steel-100 text-steel-600'
-              }`}
+              className="h-7 shrink-0 rounded-md px-3 text-xs"
             >
               {f === 'todos' ? 'Todos' : STATUS_LABELS[f]}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -91,9 +95,9 @@ export default function MobileLeadsPage() {
                     </p>
                   )}
                 </div>
-                <span className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[lead.status]}`}>
+                <Badge variant="outline" className={`shrink-0 ${STATUS_COLORS[lead.status]}`}>
                   {STATUS_LABELS[lead.status]}
-                </span>
+                </Badge>
               </li>
             ))}
           </ul>

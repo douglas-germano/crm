@@ -5,6 +5,10 @@ import useSWR from 'swr';
 import api from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import type { Negocio } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Search, Loader2, TrendingUp } from 'lucide-react';
 
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
@@ -45,24 +49,25 @@ export default function MobileNegociosPage() {
       <div className="space-y-3 border-b border-steel-100 bg-white px-4 pb-3 pt-4">
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
-          <input
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar negócio..."
-            className="h-10 w-full rounded-lg border border-steel-200 bg-steel-50 pl-9 pr-4 text-sm outline-none focus:border-brand-500"
+            className="h-10 bg-steel-50 pl-9"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
           {FILTERS.map((f) => (
-            <button
+            <Button
               key={f}
+              type="button"
+              size="sm"
+              variant={status === f ? 'default' : 'secondary'}
               onClick={() => setStatus(f)}
-              className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                status === f ? 'bg-brand-500 text-white' : 'bg-steel-100 text-steel-600'
-              }`}
+              className="h-7 shrink-0 rounded-md px-3 text-xs"
             >
               {f === 'todos' ? 'Todos' : STATUS_LABELS[f]}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -76,46 +81,48 @@ export default function MobileNegociosPage() {
           <p className="py-12 text-center text-sm text-steel-400">Nenhum negócio encontrado</p>
         ) : (
           negocios.map((n) => (
-            <div key={n.id} className="rounded-lg border border-steel-100 bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="text-sm font-semibold leading-tight text-steel-950">{n.nome}</p>
-                <span className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[n.status]}`}>
-                  {STATUS_LABELS[n.status]}
-                </span>
-              </div>
-              {n.lead?.nome && (
-                <p className="mb-2 text-xs text-steel-500">{n.lead.nome}</p>
-              )}
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-1 text-sm font-bold text-steel-900">
-                  <TrendingUp size={14} className="text-emerald-500" />
-                  {formatCurrency(n.valor)}
+            <Card key={n.id} className="bg-white">
+              <CardContent className="p-4">
+                <div className="mb-1 flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold leading-tight text-steel-950">{n.nome}</p>
+                  <Badge variant="outline" className={`shrink-0 ${STATUS_COLORS[n.status]}`}>
+                    {STATUS_LABELS[n.status]}
+                  </Badge>
                 </div>
-                {n.estagio?.nome && (
-                  <span
-                    className="text-[10px] font-medium px-2 py-0.5 rounded-full border"
-                    style={{
-                      backgroundColor: `${n.estagio.cor}20`,
-                      color: n.estagio.cor,
-                      borderColor: `${n.estagio.cor}40`,
-                    }}
-                  >
-                    {n.estagio.nome}
-                  </span>
+                {n.lead?.nome && (
+                  <p className="mb-2 text-xs text-steel-500">{n.lead.nome}</p>
                 )}
-              </div>
-              {n.probabilidade > 0 && (
-                <div className="mt-3">
-                  <div className="h-1 overflow-hidden rounded-full bg-steel-100">
-                    <div
-                      className="h-full bg-emerald-400 rounded-full"
-                      style={{ width: `${n.probabilidade}%` }}
-                    />
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-sm font-bold text-steel-900">
+                    <TrendingUp size={14} className="text-emerald-500" />
+                    {formatCurrency(n.valor)}
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{n.probabilidade}% probabilidade</p>
+                  {n.estagio?.nome && (
+                    <Badge
+                      variant="outline"
+                      style={{
+                        backgroundColor: `${n.estagio.cor}20`,
+                        color: n.estagio.cor,
+                        borderColor: `${n.estagio.cor}40`,
+                      }}
+                    >
+                      {n.estagio.nome}
+                    </Badge>
+                  )}
                 </div>
-              )}
-            </div>
+                {n.probabilidade > 0 && (
+                  <div className="mt-3">
+                    <div className="h-1 overflow-hidden rounded-full bg-steel-100">
+                      <div
+                        className="h-full rounded-full bg-emerald-400"
+                        style={{ width: `${n.probabilidade}%` }}
+                      />
+                    </div>
+                    <p className="mt-0.5 text-[10px] text-steel-400">{n.probabilidade}% probabilidade</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ))
         )}
       </div>

@@ -4,6 +4,10 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import api from '@/lib/api';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Search, Loader2, Calendar } from 'lucide-react';
 
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
@@ -65,24 +69,25 @@ export default function MobileProjetosPage() {
       <div className="space-y-3 border-b border-steel-100 bg-white px-4 pb-3 pt-4">
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
-          <input
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar projeto..."
-            className="h-10 w-full rounded-lg border border-steel-200 bg-steel-50 pl-9 pr-4 text-sm outline-none focus:border-brand-500"
+            className="h-10 bg-steel-50 pl-9"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
           {FILTERS.map((f) => (
-            <button
+            <Button
               key={f}
+              type="button"
+              size="sm"
+              variant={status === f ? 'default' : 'secondary'}
               onClick={() => setStatus(f)}
-              className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                status === f ? 'bg-brand-500 text-white' : 'bg-steel-100 text-steel-600'
-              }`}
+              className="h-7 shrink-0 rounded-md px-3 text-xs"
             >
               {f === 'todos' ? 'Todos' : STATUS_LABELS[f]}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -99,40 +104,44 @@ export default function MobileProjetosPage() {
             <Link
               key={p.id}
               href={`/projetos/detalhe?id=${p.id}`}
-              className="block rounded-lg border border-steel-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.99]"
+              className="block transition-transform active:scale-[0.99]"
             >
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="text-sm font-semibold leading-tight text-steel-950">{p.nome}</p>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[p.status] ?? 'bg-steel-100 text-steel-600'}`}>
-                  {STATUS_LABELS[p.status] ?? p.status}
-                </span>
-              </div>
-              {p.empresa_nome && (
-                <p className="mb-3 text-xs text-steel-500">{p.empresa_nome}</p>
-              )}
-              <div className="mb-1">
-                <div className="flex justify-between text-xs text-gray-400 mb-1">
-                  <span>Progresso</span>
-                  <span>{p.percentual_concluido}%</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-steel-100">
-                  <div
-                    className="h-full rounded-full bg-brand-500 transition-all"
-                    style={{ width: `${p.percentual_concluido}%` }}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${PRIORIDADE_COLORS[p.prioridade] ?? 'bg-gray-100 text-gray-500'}`}>
-                  {p.prioridade ? p.prioridade.charAt(0).toUpperCase() + p.prioridade.slice(1) : '—'}
-                </span>
-                {p.data_previsao_fim && (
-                  <span className="flex items-center gap-1 text-xs text-gray-400">
-                    <Calendar size={11} />
-                    {new Date(p.data_previsao_fim + 'T00:00:00').toLocaleDateString('pt-BR')}
-                  </span>
-                )}
-              </div>
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <div className="mb-1 flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold leading-tight text-steel-950">{p.nome}</p>
+                    <Badge variant="outline" className={`shrink-0 ${STATUS_COLORS[p.status] ?? 'bg-steel-100 text-steel-600'}`}>
+                      {STATUS_LABELS[p.status] ?? p.status}
+                    </Badge>
+                  </div>
+                  {p.empresa_nome && (
+                    <p className="mb-3 text-xs text-steel-500">{p.empresa_nome}</p>
+                  )}
+                  <div className="mb-1">
+                    <div className="mb-1 flex justify-between text-xs text-steel-400">
+                      <span>Progresso</span>
+                      <span>{p.percentual_concluido}%</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-steel-100">
+                      <div
+                        className="h-full rounded-full bg-brand-500 transition-all"
+                        style={{ width: `${p.percentual_concluido}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <Badge variant="outline" className={PRIORIDADE_COLORS[p.prioridade] ?? 'bg-steel-100 text-steel-500'}>
+                      {p.prioridade ? p.prioridade.charAt(0).toUpperCase() + p.prioridade.slice(1) : '—'}
+                    </Badge>
+                    {p.data_previsao_fim && (
+                      <span className="flex items-center gap-1 text-xs text-steel-400">
+                        <Calendar size={11} />
+                        {new Date(p.data_previsao_fim + 'T00:00:00').toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </Link>
           ))
         )}
