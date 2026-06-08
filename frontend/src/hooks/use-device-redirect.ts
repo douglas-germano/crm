@@ -6,21 +6,27 @@ import { useRouter, usePathname } from 'next/navigation';
 const MOBILE_BREAKPOINT = 768;
 
 const TO_MOBILE: Record<string, string> = {
-  '/dashboard': '/m/dashboard',
-  '/leads': '/m/leads',
-  '/inspecoes/campo': '/m/inspecoes/campo',
-  '/inspecoes': '/m/inspecoes',
-  '/projetos': '/m/projetos',
-  '/negocios': '/m/negocios',
+  '/dashboard': '/m/crm/dashboard',
+  '/leads': '/m/crm/leads',
+  '/projetos': '/m/crm/projetos',
+  '/negocios': '/m/crm/negocios',
+  '/inspect/ordens/detalhe': '/m/inspect/ordens/detalhe',
+  '/inspect/ordens': '/m/inspect/ordens',
+  '/inspect/ativos': '/m/inspect/ativos',
+  '/inspecoes/campo': '/m/inspect/inspecoes/campo',
+  '/inspecoes': '/m/inspect/inspecoes',
 };
 
 const TO_DESKTOP: Record<string, string> = {
-  '/m/dashboard': '/dashboard',
-  '/m/leads': '/leads',
-  '/m/inspecoes/campo': '/inspecoes/campo',
-  '/m/inspecoes': '/inspecoes',
-  '/m/projetos': '/projetos',
-  '/m/negocios': '/negocios',
+  '/m/crm/dashboard': '/dashboard',
+  '/m/crm/leads': '/leads',
+  '/m/crm/projetos': '/projetos',
+  '/m/crm/negocios': '/negocios',
+  '/m/inspect/ordens/detalhe': '/inspect/ordens/detalhe',
+  '/m/inspect/ordens': '/inspect/ordens',
+  '/m/inspect/ativos': '/inspect/ativos',
+  '/m/inspect/inspecoes/campo': '/inspecoes/campo',
+  '/m/inspect/inspecoes': '/inspecoes',
 };
 
 function isMobile() {
@@ -37,7 +43,10 @@ export function useDesktopToMobileRedirect() {
     const entry = Object.entries(TO_MOBILE).find(
       ([desktop]) => pathname === desktop || pathname.startsWith(desktop + '/')
     );
-    if (entry) router.replace(entry[1]);
+    if (entry) {
+      const query = window.location.search;
+      router.replace(`${entry[1]}${query}`);
+    }
   }, [pathname, router]);
 }
 
@@ -49,6 +58,9 @@ export function useMobileToDesktopRedirect() {
   useEffect(() => {
     if (isMobile()) return;
     const desktop = TO_DESKTOP[pathname];
-    if (desktop) router.replace(desktop);
+    if (desktop) {
+      const query = window.location.search;
+      router.replace(`${desktop}${query}`);
+    }
   }, [pathname, router]);
 }

@@ -8,16 +8,16 @@ import type { DashboardStats } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Users, Briefcase, Wallet, TrendingUp,
-  ClipboardCheck, FolderKanban, Loader2,
+  FolderKanban, Grid2X2, Loader2,
 } from 'lucide-react';
 
 const fetcher = (url: string) => api.get(url).then((r) => r.data);
 
 const SHORTCUTS = [
-  { href: '/m/leads', label: 'Leads', icon: Users, bg: 'bg-brand-500/10', fg: 'text-brand-600' },
-  { href: '/m/negocios', label: 'Negócios', icon: Briefcase, bg: 'bg-emerald-50', fg: 'text-emerald-600' },
-  { href: '/m/inspecoes', label: 'Inspeções', icon: ClipboardCheck, bg: 'bg-amber-50', fg: 'text-amber-700' },
-  { href: '/m/projetos', label: 'Projetos', icon: FolderKanban, bg: 'bg-steel-100', fg: 'text-brand-900' },
+  { href: '/m/crm/leads', label: 'Leads', icon: Users, bg: 'bg-brand-500/10', fg: 'text-brand-600' },
+  { href: '/m/crm/negocios', label: 'Negócios', icon: Briefcase, bg: 'bg-emerald-50', fg: 'text-emerald-600' },
+  { href: '/m/crm/projetos', label: 'Projetos', icon: FolderKanban, bg: 'bg-steel-100', fg: 'text-brand-900' },
+  { href: '/m/modulos', label: 'Módulos', icon: Grid2X2, bg: 'bg-amber-50', fg: 'text-amber-700' },
 ] as const;
 
 export default function MobileDashboardPage() {

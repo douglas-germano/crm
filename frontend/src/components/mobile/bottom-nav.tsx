@@ -2,23 +2,44 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ClipboardCheck, FolderKanban, Briefcase } from 'lucide-react';
+import {
+  Box,
+  Briefcase,
+  ClipboardCheck,
+  ClipboardList,
+  FolderKanban,
+  Grid2X2,
+  LayoutDashboard,
+  Users,
+} from 'lucide-react';
 
-const TABS = [
-  { href: '/m/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/m/leads', label: 'Leads', icon: Users },
-  { href: '/m/inspecoes', label: 'Inspeções', icon: ClipboardCheck },
-  { href: '/m/projetos', label: 'Projetos', icon: FolderKanban },
-  { href: '/m/negocios', label: 'Negócios', icon: Briefcase },
+const CRM_TABS = [
+  { href: '/m/crm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/m/crm/leads', label: 'Leads', icon: Users },
+  { href: '/m/crm/negocios', label: 'Negócios', icon: Briefcase },
+  { href: '/m/crm/projetos', label: 'Projetos', icon: FolderKanban },
+  { href: '/m/modulos', label: 'Módulos', icon: Grid2X2 },
+] as const;
+
+const INSPECT_TABS = [
+  { href: '/m/inspect/ordens', label: 'Ordens', icon: ClipboardList },
+  { href: '/m/inspect/inspecoes', label: 'Inspeções', icon: ClipboardCheck },
+  { href: '/m/inspect/ativos', label: 'Ativos', icon: Box },
+  { href: '/m/modulos', label: 'Módulos', icon: Grid2X2 },
 ] as const;
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const isModuleSelector = pathname === '/m/modulos' || pathname === '/m';
+  const tabs = pathname.startsWith('/m/inspect') ? INSPECT_TABS : CRM_TABS;
+
+  if (isModuleSelector) return null;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t border-steel-200 bg-white">
       <div className="flex h-full">
-        {TABS.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href;
+        {tabs.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}

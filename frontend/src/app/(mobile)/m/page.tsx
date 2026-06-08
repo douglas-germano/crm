@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function MobileRoot() {
-  redirect('/m/dashboard');
+  redirect('/m/modulos');
 }

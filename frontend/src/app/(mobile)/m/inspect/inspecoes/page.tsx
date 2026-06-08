@@ -80,7 +80,7 @@ export default function MobileInspecoesPage() {
           inspecoes.map((ins) => (
             <Link
               key={ins.id}
-              href={`/m/inspecoes/campo?id=${ins.id}`}
+              href={`/m/inspect/inspecoes/campo?id=${ins.id}`}
               className="block transition-transform active:scale-[0.99]"
             >
               <Card className="bg-white">

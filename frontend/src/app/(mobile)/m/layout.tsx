@@ -7,12 +7,16 @@ import BottomNav from '@/components/mobile/bottom-nav';
 import { useMobileToDesktopRedirect } from '@/hooks/use-device-redirect';
 
 const TITLES: Record<string, string> = {
-  '/m/dashboard': 'Dashboard',
-  '/m/leads': 'Leads',
-  '/m/inspecoes': 'Inspeções',
-  '/m/inspecoes/campo': 'Inspeção de Campo',
-  '/m/projetos': 'Projetos',
-  '/m/negocios': 'Negócios',
+  '/m/modulos': 'Selecionar Módulo',
+  '/m/crm/dashboard': 'Apex CRM',
+  '/m/crm/leads': 'Leads',
+  '/m/crm/projetos': 'Projetos',
+  '/m/crm/negocios': 'Negócios',
+  '/m/inspect/ordens': 'Ordens de Campo',
+  '/m/inspect/ordens/detalhe': 'Detalhe da Ordem',
+  '/m/inspect/ativos': 'Ativos',
+  '/m/inspect/inspecoes': 'Inspeções',
+  '/m/inspect/inspecoes/campo': 'Inspeção de Campo',
 };
 
 export default function MobileLayout({ children }: { children: React.ReactNode }) {

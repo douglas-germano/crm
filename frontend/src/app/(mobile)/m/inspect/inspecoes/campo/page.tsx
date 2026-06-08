@@ -176,7 +176,7 @@ export default function MobileInspecaoCampoPage() {
   if (erro && (!inspecao || !template)) {
     return (
       <div className="p-4">
-        <Button variant="ghost" onClick={() => router.push('/m/inspecoes')}>
+        <Button variant="ghost" onClick={() => router.push('/m/inspect/inspecoes')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
@@ -192,7 +192,7 @@ export default function MobileInspecaoCampoPage() {
   return (
     <div className="space-y-4 p-4 pb-24">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => router.push('/m/inspecoes')}>
+        <Button variant="ghost" size="sm" onClick={() => router.push('/m/inspect/inspecoes')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
@@ -235,7 +235,7 @@ export default function MobileInspecaoCampoPage() {
             <FileText className="mr-2 h-4 w-4" />
             Baixar Laudo PDF
           </Button>
-          <Button className="w-full" variant="outline" onClick={() => router.push('/m/inspecoes')}>
+          <Button className="w-full" variant="outline" onClick={() => router.push('/m/inspect/inspecoes')}>
             Voltar para Inspeções
           </Button>
         </section>
