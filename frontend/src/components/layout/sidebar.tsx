@@ -174,16 +174,16 @@ function NavLink({
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { logout, isPlatformSession } = useAuth();
   const { collapsed, toggle } = useSidebar();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const ws = localStorage.getItem('workspace_nome');
-      if (ws === 'apex') setIsSuperAdmin(true);
+      if (isPlatformSession || ws === 'apex') setIsSuperAdmin(true);
     }
-  }, []);
+  }, [isPlatformSession]);
 
   const isInspectModule = (
     pathname.startsWith('/inspect') ||
@@ -199,7 +199,7 @@ export default function Sidebar() {
     return pathname.startsWith(href);
   };
 
-  const isAdminPanel = pathname.startsWith('/admin');
+  const isAdminPanel = isPlatformSession && pathname.startsWith('/admin');
 
   const logoutBtn = (
     <Button

@@ -3,8 +3,11 @@ export interface Usuario {
   uuid: string;
   nome: string;
   email: string;
-  perfil_id: number;
+  perfil_id?: number;
   perfil?: Perfil;
+  papel?: string;
+  tipo?: 'tenant' | 'platform';
+  is_super_admin?: boolean;
   ativo: boolean;
   deve_trocar_senha?: boolean;
   data_criacao: string;

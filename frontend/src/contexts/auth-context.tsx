@@ -9,14 +9,17 @@ interface AuthContextType {
   user: Usuario | null;
   loading: boolean;
   login: (email: string, senha: string, workspace: string) => Promise<void>;
+  loginSuperAdmin: (email: string, senha: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  isPlatformSession: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null);
+  const [isPlatformSession, setIsPlatformSession] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadUser = useCallback(async () => {
@@ -26,9 +29,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         return;
       }
-      const response = await api.get('/api/v1/core/usuarios/perfil');
-      const u: Usuario = response.data;
+      const tokenType = localStorage.getItem('auth_tipo');
+      const response = tokenType === 'platform'
+        ? await api.get('/api/v1/core/super-admin/me')
+        : await api.get('/api/v1/core/usuarios/perfil');
+      const u: Usuario = tokenType === 'platform' ? response.data.usuario : response.data;
       setUser(u);
+      setIsPlatformSession(tokenType === 'platform');
       identifyUser(String(u.id), {
         nome: u.nome,
         email: u.email,
@@ -38,7 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
+      localStorage.removeItem('auth_tipo');
       setUser(null);
+      setIsPlatformSession(false);
     } finally {
       setLoading(false);
     }
@@ -54,8 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { access_token, refresh_token, usuario } = response.data;
     localStorage.setItem('token', access_token);
     localStorage.setItem('refresh_token', refresh_token);
+    localStorage.setItem('auth_tipo', 'tenant');
     localStorage.setItem('workspace_nome', response.data.workspace?.nome_fantasia || workspace);
     setUser(usuario);
+    setIsPlatformSession(false);
     identifyUser(String(usuario.id), {
       nome: usuario.nome,
       email: usuario.email,
@@ -63,6 +74,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       workspace: response.data.workspace?.nome_fantasia || workspace,
     });
     trackEvent('user_logged_in', { workspace: response.data.workspace?.nome_fantasia || workspace });
+  };
+
+  const loginSuperAdmin = async (email: string, senha: string) => {
+    const response = await api.post('/api/v1/core/super-admin/login', { email, senha });
+    const { access_token, refresh_token, usuario } = response.data;
+    localStorage.setItem('token', access_token);
+    localStorage.setItem('refresh_token', refresh_token);
+    localStorage.setItem('auth_tipo', 'platform');
+    localStorage.setItem('workspace_nome', 'Super Admin');
+    setUser(usuario);
+    setIsPlatformSession(true);
+    identifyUser(String(usuario.id), {
+      nome: usuario.nome,
+      email: usuario.email,
+      perfil: usuario.papel || 'super_admin',
+      workspace: 'platform',
+    });
+    trackEvent('platform_user_logged_in', { email: usuario.email });
   };
 
   const logout = async () => {
@@ -75,8 +104,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetAnalytics();
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('auth_tipo');
     localStorage.removeItem('workspace_nome');
     setUser(null);
+    setIsPlatformSession(false);
   };
 
   return (
@@ -85,8 +116,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         login,
+        loginSuperAdmin,
         logout,
         isAuthenticated: !!user,
+        isPlatformSession,
       }}
     >
       {children}

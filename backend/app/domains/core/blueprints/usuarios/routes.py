@@ -83,6 +83,8 @@ def login():
 
     if not tenant:
         return jsonify({'erro': 'Workspace não encontrado'}), 404
+    if tenant.ativo is False:
+        return jsonify({'erro': 'Workspace inativo. Entre em contato com o suporte.'}), 403
 
     if not re.match(r'^[a-z_][a-z0-9_]*$', tenant.db_schema):
         return jsonify({'erro': 'Workspace inválido'}), 400

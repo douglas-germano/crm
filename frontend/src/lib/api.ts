@@ -49,7 +49,11 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
-          const response = await api.post('/api/v1/core/usuarios/refresh', {}, {
+          const authTipo = localStorage.getItem('auth_tipo');
+          const refreshUrl = authTipo === 'platform'
+            ? '/api/v1/core/super-admin/refresh'
+            : '/api/v1/core/usuarios/refresh';
+          const response = await api.post(refreshUrl, {}, {
             headers: { Authorization: `Bearer ${refreshToken}` },
           });
 
@@ -59,10 +63,12 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch {
+        const authTipo = typeof window !== 'undefined' ? localStorage.getItem('auth_tipo') : null;
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth_tipo');
         if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+          window.location.href = authTipo === 'platform' ? '/super-admin/login' : '/login';
         }
       }
     }
