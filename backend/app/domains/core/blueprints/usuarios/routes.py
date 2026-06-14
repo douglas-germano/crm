@@ -9,7 +9,7 @@ from app import db, limiter
 from app.domains.core.models import LogAtividade, Perfil, Permissao, Tenant, Usuario
 from app.utils.decorators import token_required
 from app.domains.core.blueprints.usuarios import usuarios_bp
-from sqlalchemy import text
+from sqlalchemy import or_, text
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from app.utils.email_service import enviar_email
 
@@ -56,6 +56,19 @@ def registrar_log(usuario_id, acao, modulo, descricao=None):
         current_app.logger.error(f"Erro ao registrar log: {str(e)}")
 
 
+def _buscar_tenant_por_workspace(workspace):
+    if not workspace:
+        return None
+
+    workspace = workspace.strip().lower()
+    return Tenant.query.filter(
+        or_(
+            Tenant.subdominio == workspace,
+            Tenant.db_schema == workspace,
+        )
+    ).first()
+
+
 # Rotas de autenticação
 @usuarios_bp.route('/login', methods=['POST'])
 @limiter.limit('10 per minute')
@@ -66,7 +79,7 @@ def login():
         return jsonify({'erro': 'Email, senha e workspace são obrigatórios'}), 400
 
     workspace = data.get('workspace')
-    tenant = Tenant.query.filter_by(subdominio=workspace).first()
+    tenant = _buscar_tenant_por_workspace(workspace)
 
     if not tenant:
         return jsonify({'erro': 'Workspace não encontrado'}), 404
@@ -590,7 +603,7 @@ def esqueci_senha():
     email = data.get('email').strip().lower()
     workspace = data.get('workspace').strip().lower()
 
-    tenant = Tenant.query.filter_by(subdominio=workspace).first()
+    tenant = _buscar_tenant_por_workspace(workspace)
     if not tenant:
         return jsonify({'mensagem': 'Se os dados estiverem corretos, preparamos as instruções de recuperação.'}), 200
 
