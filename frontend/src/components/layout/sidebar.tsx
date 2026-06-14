@@ -97,8 +97,9 @@ const inspectNavSections = [
 ];
 
 const adminNavLinks = [
-  { href: '/admin',          label: 'Matrix (Tenants)',   icon: LayoutDashboard },
-  { href: '/admin/settings', label: 'Configurações SaaS', icon: Settings        },
+  { href: '/admin',                      label: 'Matrix (Tenants)',   icon: LayoutDashboard },
+  { href: '/admin/settings',             label: 'Configurações SaaS', icon: Settings        },
+  { href: '/admin/settings/privacidade', label: 'Privacidade (LGPD)', icon: ShieldCheck    },
 ];
 
 // ---------------------------------------------------------------------------
@@ -198,7 +199,7 @@ export default function Sidebar() {
     return pathname.startsWith(href);
   };
 
-  const isAdminPanel = isSuperAdmin && pathname === '/admin';
+  const isAdminPanel = pathname.startsWith('/admin');
 
   const logoutBtn = (
     <Button

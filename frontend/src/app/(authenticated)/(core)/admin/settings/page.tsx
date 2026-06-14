@@ -1,6 +1,7 @@
 'use client';
 
-import { Settings2, ShieldCheck, Mail, GlobeLock, KeySquare, Lock, Check, Loader2, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Settings2, ShieldCheck, Mail, GlobeLock, KeySquare, Lock, Check, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -51,6 +52,23 @@ export default function AdminSettings() {
   return (
     <div className="space-y-6 pb-8">
       <div className="grid gap-5 md:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3 border-b">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+              Tratamento LGPD
+            </CardTitle>
+            <CardDescription>Exporte, revogue consentimento ou anonimize dados pessoais de titulares.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-5">
+            <Button asChild>
+              <Link href="/admin/settings/privacidade">
+                Abrir tratamento LGPD
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Acesso e Segurança */}
         <Card>
