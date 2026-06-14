@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Settings2, GitBranch } from 'lucide-react';
+import { Settings2, GitBranch, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const settingsNav = [
   { href: '/admin/settings', label: 'Geral', icon: Settings2 },
   { href: '/admin/settings/pipelines', label: 'Pipelines', icon: GitBranch },
+  { href: '/admin/settings/privacidade', label: 'Privacidade (LGPD)', icon: ShieldCheck },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models.inspecao import Inspecao
+from app.models import Inspecao
 from app.utils.pdf_generator import gerar_pdf_laudo
 from sqlalchemy import text
 

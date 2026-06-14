@@ -41,6 +41,14 @@ export interface Lead {
   status: 'novo' | 'contatado' | 'qualificado' | 'convertido' | 'perdido';
   responsavel?: string;
   responsavel_id?: number;
+  // LGPD (Lei 13.709/2018)
+  base_legal?: 'consentimento' | 'legitimo_interesse' | 'execucao_contrato' | 'obrigacao_legal';
+  finalidade?: string;
+  consentimento?: boolean;
+  consentimento_data?: string | null;
+  consentimento_origem?: string;
+  anonimizado?: boolean;
+  anonimizado_em?: string | null;
   data_criacao: string;
   data_atualizacao: string;
 }

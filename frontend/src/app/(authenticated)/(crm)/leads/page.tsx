@@ -35,6 +35,9 @@ interface Lead {
   status: string
   empresa_id?: number | null
   responsavel?: string
+  base_legal?: string
+  consentimento?: boolean
+  anonimizado?: boolean
   data_criacao: string
 }
 
@@ -47,7 +50,8 @@ interface Empresa {
 const EMPTY_FORM = {
   nome: '', email: '', telefone: '', empresa: '',
   cargo: '', interesse: '', origem: '', observacoes: '', empresa_id: '' as string | number,
-  status: 'novo'
+  status: 'novo',
+  base_legal: 'legitimo_interesse', consentimento: false,
 }
 
 function statusBadgeClass(status: string) {
@@ -112,7 +116,9 @@ export default function LeadsPage() {
       origem: lead.origem || '',
       observacoes: lead.observacoes || '',
       empresa_id: lead.empresa_id ?? '',
-      status: lead.status || 'novo'
+      status: lead.status || 'novo',
+      base_legal: lead.base_legal || 'legitimo_interesse',
+      consentimento: lead.consentimento ?? false,
     })
     setErrors({})
     setApiError('')
@@ -493,6 +499,34 @@ export default function LeadsPage() {
                 value={form.observacoes}
                 onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))}
               />
+            </div>
+
+            {/* LGPD — base legal e consentimento do titular (art. 7/8) */}
+            <div className="space-y-2 rounded-md border border-steel-200 bg-steel-50 p-3">
+              <Label>Base legal do tratamento (LGPD)</Label>
+              <Select
+                value={form.base_legal || 'legitimo_interesse'}
+                onValueChange={v => setForm(f => ({ ...f, base_legal: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="legitimo_interesse">Legítimo interesse</SelectItem>
+                  <SelectItem value="consentimento">Consentimento</SelectItem>
+                  <SelectItem value="execucao_contrato">Execução de contrato</SelectItem>
+                  <SelectItem value="obrigacao_legal">Obrigação legal</SelectItem>
+                </SelectContent>
+              </Select>
+              <label className="flex items-start gap-2 pt-1 text-sm text-steel-600">
+                <input
+                  type="checkbox"
+                  checked={!!form.consentimento}
+                  onChange={e => setForm(f => ({ ...f, consentimento: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 rounded border-steel-300 text-brand-500 focus:ring-brand-500"
+                />
+                O titular consentiu com o uso dos seus dados para contato.
+              </label>
             </div>
 
             <DialogFooter>

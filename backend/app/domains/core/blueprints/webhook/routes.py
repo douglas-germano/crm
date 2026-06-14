@@ -1,10 +1,11 @@
 import secrets
 import re
+from datetime import datetime, timezone
 from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy import text
 
-from app import db
+from app import db, limiter
 from app.domains.core.models import Tenant, WebhookIntegracao
 from app.domains.core.blueprints.usuarios.routes import registrar_log
 from app.domains.crm.models import Lead
@@ -44,6 +45,7 @@ def _set_schema(schema: str):
 
 @webhook_bp.route('/leads', methods=['POST'])
 @webhook_bp.route('/<workspace>/leads', methods=['POST'])
+@limiter.limit('60 per minute')
 def receber_lead(workspace: str | None = None):
     """
     Endpoint público autenticado apenas pelo webhook_token do tenant.
@@ -134,6 +136,17 @@ def receber_lead(workspace: str | None = None):
     )
     observacoes = dados.get('observacoes') or dados.get('message') or dados.get('notes') or dados.get('comments')
 
+    # --- LGPD: base legal e consentimento (art. 7/8) ---
+    # Formulários externos devem informar `consentimento` quando o titular aceitou
+    # a coleta. Sem isso, a base legal padrão é "legítimo interesse" para contato B2B.
+    consentimento = bool(dados.get('consentimento') or dados.get('consent') or dados.get('opt_in'))
+    base_legal = dados.get('base_legal') or ('consentimento' if consentimento else 'legitimo_interesse')
+    finalidade = dados.get('finalidade') or dados.get('purpose') or 'Contato comercial e gestão de relacionamento (CRM)'
+    consentimento_origem = (
+        dados.get('consentimento_origem') or dados.get('consent_source') or
+        dados.get('utm_source') or origem
+    )
+
     lead = Lead(
         nome=nome[:100],
         email=email[:100],
@@ -144,6 +157,11 @@ def receber_lead(workspace: str | None = None):
         origem=origem[:50] if origem else 'Webhook',
         observacoes=observacoes,
         status='novo',
+        base_legal=base_legal[:30] if base_legal else 'legitimo_interesse',
+        finalidade=finalidade,
+        consentimento=consentimento,
+        consentimento_data=datetime.now(timezone.utc) if consentimento else None,
+        consentimento_origem=consentimento_origem[:120] if consentimento_origem else None,
     )
 
     db.session.add(lead)

@@ -45,6 +45,38 @@ def validar_email(email):
     
     return False
 
+class SenhaFracaError(ValueError):
+    """Levantada quando uma senha não atende aos requisitos mínimos de segurança."""
+    pass
+
+
+def validar_forca_senha(senha):
+    """Valida a robustez de uma senha (LGPD art. 46 — medidas de segurança).
+
+    Requisitos: mínimo de 8 caracteres, contendo ao menos uma letra e um número.
+
+    Args:
+        senha (str): senha em texto puro a ser validada.
+
+    Returns:
+        str: a própria senha, se válida.
+
+    Raises:
+        SenhaFracaError: se a senha não atender aos requisitos.
+    """
+    import re
+
+    if not senha or not isinstance(senha, str):
+        raise SenhaFracaError('A senha é obrigatória.')
+    if len(senha) < 8:
+        raise SenhaFracaError('A senha deve ter no mínimo 8 caracteres.')
+    if not re.search(r'[A-Za-z]', senha):
+        raise SenhaFracaError('A senha deve conter ao menos uma letra.')
+    if not re.search(r'\d', senha):
+        raise SenhaFracaError('A senha deve conter ao menos um número.')
+    return senha
+
+
 def validar_formato_data(data_str, formato='%Y-%m-%d'):
     """
     Verifica se a string de data está no formato esperado.

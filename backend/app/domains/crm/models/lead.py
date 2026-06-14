@@ -20,7 +20,17 @@ class Lead(db.Model):
     status = db.Column(db.String(20), default='novo')  # novo, contatado, qualificado, convertido, perdido
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    
+
+    # --- LGPD (Lei 13.709/2018) ---
+    # base_legal (art. 7): consentimento | legitimo_interesse | execucao_contrato | obrigacao_legal
+    base_legal = db.Column(db.String(30), default='legitimo_interesse')
+    finalidade = db.Column(db.Text)  # finalidade específica do tratamento (art. 6, I)
+    consentimento = db.Column(db.Boolean, default=False)  # titular consentiu explicitamente (art. 8)
+    consentimento_data = db.Column(db.DateTime)  # quando o consentimento foi coletado
+    consentimento_origem = db.Column(db.String(120))  # de onde veio (formulário, landing, etc.)
+    anonimizado = db.Column(db.Boolean, default=False)  # dados pessoais anonimizados (art. 16)
+    anonimizado_em = db.Column(db.DateTime)
+
     # Campo para indicar qual usuário está responsável pelo lead
     responsavel_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
     responsavel = db.relationship('Usuario', backref=db.backref('leads', lazy='dynamic'))
@@ -42,6 +52,13 @@ class Lead(db.Model):
             'status': self.status,
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
             'data_atualizacao': self.data_atualizacao.isoformat() if self.data_atualizacao else None,
+            'base_legal': self.base_legal,
+            'finalidade': self.finalidade,
+            'consentimento': self.consentimento,
+            'consentimento_data': self.consentimento_data.isoformat() if self.consentimento_data else None,
+            'consentimento_origem': self.consentimento_origem,
+            'anonimizado': self.anonimizado,
+            'anonimizado_em': self.anonimizado_em.isoformat() if self.anonimizado_em else None,
             'responsavel': self.responsavel.nome if self.responsavel else None,
             'responsavel_id': self.responsavel_id
         }

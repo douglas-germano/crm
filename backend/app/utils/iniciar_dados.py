@@ -23,6 +23,9 @@ def criar_permissoes():
             {'codigo': 'excluir_perfil', 'descricao': 'Excluir um perfil'},
             {'codigo': 'listar_permissoes', 'descricao': 'Listar todas as permissões'},
             {'codigo': 'visualizar_logs', 'descricao': 'Visualizar logs de atividade'}
+        ],
+        'privacidade': [
+            {'codigo': 'lgpd_gerir', 'descricao': 'Gerir direitos do titular (exportar, anonimizar, revogar consentimento)'}
         ]
         # Adicionar permissões para outros módulos aqui
     }

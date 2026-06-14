@@ -5,7 +5,7 @@ from functools import wraps
 import re
 import uuid
 
-from app import db
+from app import db, limiter
 from app.domains.core.models import LogAtividade, Perfil, Permissao, Tenant, Usuario
 from app.utils.decorators import token_required
 from app.domains.core.blueprints.usuarios import usuarios_bp
@@ -58,6 +58,7 @@ def registrar_log(usuario_id, acao, modulo, descricao=None):
 
 # Rotas de autenticação
 @usuarios_bp.route('/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def login():
     data = request.get_json()
 
@@ -536,7 +537,7 @@ def registrar_admin():
         permissoes_codigos = [
             'listar_usuarios', 'visualizar_usuario', 'criar_usuario', 'editar_usuario', 'excluir_usuario',
             'listar_perfis', 'visualizar_perfil', 'criar_perfil', 'editar_perfil', 'excluir_perfil',
-            'listar_permissoes', 'visualizar_logs'
+            'listar_permissoes', 'visualizar_logs', 'lgpd_gerir'
         ]
 
         for codigo in permissoes_codigos:
@@ -545,7 +546,7 @@ def registrar_admin():
                 permissao = Permissao(
                     codigo=codigo,
                     descricao=codigo.replace('_', ' ').title(),
-                    modulo='usuarios'
+                    modulo='privacidade' if codigo == 'lgpd_gerir' else 'usuarios'
                 )
                 db.session.add(permissao)
             permissoes.append(permissao)
@@ -580,6 +581,7 @@ def registrar_admin():
 # --- Rotas de Recuperação de Senha (Stateless) ---
 
 @usuarios_bp.route('/esqueci-senha', methods=['POST'])
+@limiter.limit('5 per minute')
 def esqueci_senha():
     data = request.get_json()
     if not data or 'email' not in data or 'workspace' not in data:

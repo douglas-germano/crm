@@ -19,6 +19,15 @@ class Contato(db.Model):
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     data_atualizacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+    # --- LGPD (Lei 13.709/2018) ---
+    base_legal = db.Column(db.String(30), default='execucao_contrato')
+    finalidade = db.Column(db.Text)
+    consentimento = db.Column(db.Boolean, default=False)
+    consentimento_data = db.Column(db.DateTime)
+    consentimento_origem = db.Column(db.String(120))
+    anonimizado = db.Column(db.Boolean, default=False)
+    anonimizado_em = db.Column(db.DateTime)
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -33,6 +42,13 @@ class Contato(db.Model):
             'empresa_id': self.empresa_id,
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
             'data_atualizacao': self.data_atualizacao.isoformat() if self.data_atualizacao else None,
+            'base_legal': self.base_legal,
+            'finalidade': self.finalidade,
+            'consentimento': self.consentimento,
+            'consentimento_data': self.consentimento_data.isoformat() if self.consentimento_data else None,
+            'consentimento_origem': self.consentimento_origem,
+            'anonimizado': self.anonimizado,
+            'anonimizado_em': self.anonimizado_em.isoformat() if self.anonimizado_em else None,
         }
 
     def __repr__(self):

@@ -19,7 +19,13 @@ python test_db.py                # quick DB smoke test
 python test_pdf.py               # test PDF generation
 flask db migrate -m "message"   # create migration
 flask db upgrade                 # apply migrations
+flask lgpd-retencao-leads --dias 730   # anonimiza leads inativos (todos os tenants)
+flask lgpd-purgar-ip-logs --dias 180   # remove IP de logs antigos (todos os tenants)
 ```
+
+> **LGPD:** os comandos `lgpd-*` iteram por todos os schemas de tenant e aplicam a política
+> de retenção/anonimização (art. 15/16). Agende-os periodicamente (cron). Endpoints de direitos
+> do titular ficam em `/api/v1/core/privacidade/*` (permissão `lgpd_gerir`).
 
 ### Frontend
 ```bash
@@ -33,25 +39,29 @@ npm run lint
 
 ### Backend (`backend/`)
 
-Flask application factory in `app/__init__.py`. Blueprints are registered under `app/blueprints/`, each with `__init__.py` + `routes.py`.
+Flask application factory in `app/__init__.py`. Blueprints are organized by domain under `app/domains/`, registered centrally via `app/domains/registry.py`.
 
-**Blueprint URL prefixes** (`/api/<resource>`):
-| Blueprint | Prefix | Domain |
-|-----------|--------|--------|
-| `usuarios` | `/api/v1/core/usuarios` | Auth, user accounts |
-| `tenants` | `/api/v1/core/tenants` | Tenant provisioning |
-| `leads` | `/api/v1/crm/leads` | Lead management |
-| `empresas` | `/api/v1/crm/empresas` | Company records |
-| `negocios` | `/api/v1/crm/negocios` | Deals/opportunities |
-| `pipelines` | `/api/v1/crm/pipelines` | Pipeline & stage config |
-| `servicos` | `/api/v1/crm/servicos` | Service catalog |
-| `projetos` | `/api/v1/crm/projetos` | Project management |
-| `ativos` | `/api/v1/inspect/ativos` | Asset tracking |
-| `inspecoes` | `/api/v1/inspect/inspecoes` | Inspection workflows |
-| `dashboard` | `/api/v1/crm/dashboard` | Analytics & summaries |
-| `admin` | `/api/v1/core/admin` | Admin operations |
+**Domain structure** (`app/domains/<domain>/blueprints/<resource>/routes.py`):
 
-**Models** (`app/models/`): All exported from `app/models/__init__.py`. Key relationships:
+| Domain | Blueprint | URL Prefix |
+|--------|-----------|------------|
+| `core` | `usuarios` | `/api/v1/core/usuarios` |
+| `core` | `tenants` | `/api/v1/core/tenants` |
+| `core` | `admin` | `/api/v1/core/admin` |
+| `core` | `webhook` | `/api/v1/core/webhook` |
+| `core` | `privacidade` | `/api/v1/core/privacidade` |
+| `crm` | `leads` | `/api/v1/crm/leads` |
+| `crm` | `empresas` | `/api/v1/crm/empresas` |
+| `crm` | `negocios` | `/api/v1/crm/negocios` |
+| `crm` | `pipelines` | `/api/v1/crm/pipelines` |
+| `crm` | `servicos` | `/api/v1/crm/servicos` |
+| `crm` | `projetos` | `/api/v1/crm/projetos` |
+| `crm` | `dashboard` | `/api/v1/crm/dashboard` |
+| `inspect` | `ativos` | `/api/v1/inspect/ativos` |
+| `inspect` | `inspecoes` | `/api/v1/inspect/inspecoes` |
+| `inspect` | `ordens` | `/api/v1/inspect/ordens` |
+
+**Models** (`app/domains/<domain>/models/`): All re-exported from `app/models/__init__.py` for convenience — use `from app.models import Foo`. Key relationships:
 - `Lead` → belongs to `Empresa`
 - `Negocio` → belongs to `Lead`, references `Servico`, placed in a `Pipeline` + `Estagio`
 - `Pipeline` → has many `Estagio` stages (ordered, colored); `LeadEstagio` tracks placement history

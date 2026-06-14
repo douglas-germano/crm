@@ -1,10 +1,5 @@
 from app import create_app, db
-from app.models.template_checklist import TemplateChecklist
-from app.models.ativo import Ativo
-from app.models.contrato_amc import ContratoAMC
-from app.models.inspecao import Inspecao
-from app.models.empresa import Empresa
-from app.models.usuario import Usuario
+from app.models import TemplateChecklist, Ativo, ContratoAMC, Inspecao, Empresa, Usuario
 from datetime import datetime, date, timedelta
 from sqlalchemy import text
 

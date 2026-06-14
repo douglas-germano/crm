@@ -19,7 +19,8 @@ export default function RegistroPage() {
   const [nomeAdmin, setNomeAdmin] = useState('');
   const [emailAdmin, setEmailAdmin] = useState('');
   const [senhaAdmin, setSenhaAdmin] = useState('');
-  
+  const [aceiteTermos, setAceiteTermos] = useState(false);
+
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1);
@@ -27,6 +28,12 @@ export default function RegistroPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!aceiteTermos) {
+      setError('É necessário aceitar a Política de Privacidade e os Termos de Uso para continuar.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -190,9 +197,27 @@ export default function RegistroPage() {
                     onChange={(e) => setSenhaAdmin(e.target.value)}
                     required={step === 2}
                     placeholder="••••••••"
-                    minLength={6}
+                    minLength={8}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">Mínimo de 8 caracteres, com letras e números.</p>
+              </div>
+
+              {/* LGPD art. 8 — aceite explícito antes da criação da conta */}
+              <div className="flex items-start gap-2 pt-2">
+                <input
+                  id="aceiteTermos"
+                  type="checkbox"
+                  checked={aceiteTermos}
+                  onChange={(e) => setAceiteTermos(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-steel-300 text-brand-500 focus:ring-brand-500"
+                />
+                <Label htmlFor="aceiteTermos" className="text-xs font-normal leading-relaxed text-muted-foreground">
+                  Li e aceito a{' '}
+                  <a href="/privacidade" target="_blank" className="text-brand-500 hover:underline">Política de Privacidade</a>
+                  {' '}e os{' '}
+                  <a href="/termos" target="_blank" className="text-brand-500 hover:underline">Termos de Uso</a>.
+                </Label>
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -208,7 +233,7 @@ export default function RegistroPage() {
                 
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !nomeAdmin || !emailAdmin || !senhaAdmin}
+                  disabled={isSubmitting || !nomeAdmin || !emailAdmin || !senhaAdmin || !aceiteTermos}
                   className="w-2/3"
                 >
                   {isSubmitting ? (

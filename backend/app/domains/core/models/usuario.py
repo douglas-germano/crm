@@ -27,6 +27,8 @@ class Usuario(db.Model):
     
     @senha.setter
     def senha(self, senha):
+        from app.utils.validadores import validar_forca_senha
+        validar_forca_senha(senha)  # LGPD art. 46 — rejeita senhas fracas
         self.senha_hash = generate_password_hash(senha)
     
     def verificar_senha(self, senha):
