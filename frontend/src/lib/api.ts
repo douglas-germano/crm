@@ -37,39 +37,65 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+const isRefreshUrl = (url?: string) => !!url && url.includes('/refresh');
+
+const limparSessao = () => {
+  const authTipo = typeof window !== 'undefined' ? localStorage.getItem('auth_tipo') : null;
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('auth_tipo');
+    localStorage.removeItem('workspace_nome');
+    localStorage.removeItem('impersonacao');
+    localStorage.removeItem('plat_token');
+    localStorage.removeItem('plat_refresh');
+    const destino = authTipo === 'platform' ? '/super-admin/login' : '/login';
+    // Evita loop de redirecionamento se já estamos na tela de login
+    if (!window.location.pathname.startsWith(destino)) {
+      window.location.href = destino;
+    }
+  }
+};
+
 // Response interceptor - handle 401 and refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const status = error.response?.status;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Se a PRÓPRIA chamada de refresh falhou (401/403), não tente refrescar de novo:
+    // encerra a sessão. Isso elimina o loop infinito de /refresh.
+    if ((status === 401 || status === 403) && isRefreshUrl(originalRequest?.url)) {
+      limparSessao();
+      return Promise.reject(error);
+    }
+
+    if (status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const authTipo = localStorage.getItem('auth_tipo');
-          const refreshUrl = authTipo === 'platform'
-            ? '/api/v1/core/super-admin/refresh'
-            : '/api/v1/core/usuarios/refresh';
-          const response = await api.post(refreshUrl, {}, {
-            headers: { Authorization: `Bearer ${refreshToken}` },
-          });
+      const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+      if (!refreshToken) {
+        limparSessao();
+        return Promise.reject(error);
+      }
 
-          const { access_token } = response.data;
-          localStorage.setItem('token', access_token);
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
-          return api(originalRequest);
-        }
-      } catch {
-        const authTipo = typeof window !== 'undefined' ? localStorage.getItem('auth_tipo') : null;
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('auth_tipo');
-        if (typeof window !== 'undefined') {
-          window.location.href = authTipo === 'platform' ? '/super-admin/login' : '/login';
-        }
+      try {
+        const authTipo = localStorage.getItem('auth_tipo');
+        const refreshUrl = authTipo === 'platform'
+          ? '/api/v1/core/super-admin/refresh'
+          : '/api/v1/core/usuarios/refresh';
+        const response = await api.post(refreshUrl, {}, {
+          headers: { Authorization: `Bearer ${refreshToken}` },
+        });
+
+        const { access_token } = response.data;
+        localStorage.setItem('token', access_token);
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        limparSessao();
+        return Promise.reject(refreshError);
       }
     }
 
