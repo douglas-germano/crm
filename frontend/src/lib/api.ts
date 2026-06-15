@@ -39,21 +39,29 @@ api.interceptors.request.use(
 
 const isRefreshUrl = (url?: string) => !!url && url.includes('/refresh');
 
+// Guarda para garantir que o encerramento de sessão (e o redirect) rode UMA vez.
+// Sem isso, a falha de refresh dispara limparSessao 2x e a 2ª chamada (já com
+// auth_tipo removido) sobrescreve o destino, mandando o Super Admin para /login.
+let encerrandoSessao = false;
+
 const limparSessao = () => {
-  const authTipo = typeof window !== 'undefined' ? localStorage.getItem('auth_tipo') : null;
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('auth_tipo');
-    localStorage.removeItem('workspace_nome');
-    localStorage.removeItem('impersonacao');
-    localStorage.removeItem('plat_token');
-    localStorage.removeItem('plat_refresh');
-    const destino = authTipo === 'platform' ? '/super-admin/login' : '/login';
-    // Evita loop de redirecionamento se já estamos na tela de login
-    if (!window.location.pathname.startsWith(destino)) {
-      window.location.href = destino;
-    }
+  if (typeof window === 'undefined' || encerrandoSessao) return;
+  encerrandoSessao = true;
+
+  const authTipo = localStorage.getItem('auth_tipo');
+  const destino = authTipo === 'platform' ? '/super-admin/login' : '/login';
+
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('auth_tipo');
+  localStorage.removeItem('workspace_nome');
+  localStorage.removeItem('impersonacao');
+  localStorage.removeItem('plat_token');
+  localStorage.removeItem('plat_refresh');
+
+  // Evita loop de redirecionamento se já estamos na tela de login
+  if (!window.location.pathname.startsWith(destino)) {
+    window.location.href = destino;
   }
 };
 
