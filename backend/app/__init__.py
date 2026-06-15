@@ -128,10 +128,19 @@ def create_app(config_name=None):
                     or request.endpoint in exempt_webhook_endpoints):
                 return
 
+        super_admin_endpoints = domain_endpoint_prefixes(['super_admin'])
+        super_admin_prefixes = tuple(f'{prefix}.' for prefix in super_admin_endpoints)
+
         try:
             verify_jwt_in_request(optional=True)
             claims = get_jwt()
-            if claims and 'schema' in claims:
+            if claims and claims.get('tipo') == 'platform':
+                # Defesa em profundidade: token de plataforma só acessa rotas super-admin.
+                # Não troca de schema — opera sempre no schema público global.
+                if request.endpoint and not request.endpoint.startswith(super_admin_prefixes):
+                    from flask import abort
+                    abort(403)
+            elif claims and 'schema' in claims:
                 schema = claims['schema']
                 if not re.match(r'^[a-z_][a-z0-9_]*$', schema):
                     from flask import abort

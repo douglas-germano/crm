@@ -25,7 +25,6 @@ import {
   ClipboardSignature,
   LibraryBig,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { cn } from '@/lib/utils';
@@ -97,9 +96,11 @@ const inspectNavSections = [
 ];
 
 const adminNavLinks = [
-  { href: '/admin',                      label: 'Matrix (Tenants)',   icon: LayoutDashboard },
-  { href: '/admin/settings',             label: 'Configurações SaaS', icon: Settings        },
-  { href: '/admin/settings/privacidade', label: 'Privacidade (LGPD)', icon: ShieldCheck    },
+  { href: '/admin',                      label: 'Matrix (Tenants)',   icon: LayoutDashboard     },
+  { href: '/admin/operadores',           label: 'Operadores',         icon: Users               },
+  { href: '/admin/seguranca',            label: 'Segurança (2FA)',    icon: ShieldAlert         },
+  { href: '/admin/settings',             label: 'Configurações SaaS', icon: Settings            },
+  { href: '/admin/settings/privacidade', label: 'Privacidade (LGPD)', icon: ShieldCheck         },
 ];
 
 // ---------------------------------------------------------------------------
@@ -176,14 +177,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { logout, isPlatformSession } = useAuth();
   const { collapsed, toggle } = useSidebar();
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const ws = localStorage.getItem('workspace_nome');
-      if (isPlatformSession || ws === 'apex') setIsSuperAdmin(true);
-    }
-  }, [isPlatformSession]);
+  // Acesso ao painel da plataforma depende exclusivamente da sessão de plataforma
+  // (autenticada via Super Admin), nunca do nome do workspace.
+  const isSuperAdmin = isPlatformSession;
 
   const isInspectModule = (
     pathname.startsWith('/inspect') ||

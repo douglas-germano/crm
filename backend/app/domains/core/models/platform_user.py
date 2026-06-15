@@ -13,10 +13,21 @@ class PlatformUser(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     senha_hash = db.Column(db.String(256), nullable=False)
+    # Papéis: 'super_admin' (acesso total) | 'suporte' (somente leitura/inspeção)
     papel = db.Column(db.String(30), nullable=False, default='super_admin')
     ativo = db.Column(db.Boolean, default=True)
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     ultimo_login = db.Column(db.DateTime)
+
+    # 2FA (TOTP)
+    mfa_secret = db.Column(db.String(64))
+    mfa_habilitado = db.Column(db.Boolean, default=False, nullable=False)
+
+    # Proteção contra força bruta
+    tentativas_falhas = db.Column(db.Integer, default=0, nullable=False)
+    bloqueado_ate = db.Column(db.DateTime)
+
+    PAPEIS_VALIDOS = ('super_admin', 'suporte')
 
     @property
     def senha(self):
@@ -24,10 +35,26 @@ class PlatformUser(db.Model):
 
     @senha.setter
     def senha(self, senha):
+        from app.utils.validadores import validar_forca_senha
+        validar_forca_senha(senha)  # exige senha forte também para operadores da plataforma
         self.senha_hash = generate_password_hash(senha)
 
     def verificar_senha(self, senha):
         return check_password_hash(self.senha_hash, senha)
+
+    @property
+    def esta_bloqueado(self):
+        if not self.bloqueado_ate:
+            return False
+        agora = datetime.now(timezone.utc)
+        bloqueio = self.bloqueado_ate
+        if bloqueio.tzinfo is None:
+            bloqueio = bloqueio.replace(tzinfo=timezone.utc)
+        return bloqueio > agora
+
+    @property
+    def is_super_admin(self):
+        return self.papel == 'super_admin' and self.ativo
 
     def to_dict(self):
         return {
@@ -36,6 +63,8 @@ class PlatformUser(db.Model):
             'email': self.email,
             'papel': self.papel,
             'ativo': self.ativo,
+            'mfa_habilitado': bool(self.mfa_habilitado),
+            'bloqueado': self.esta_bloqueado,
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
             'ultimo_login': self.ultimo_login.isoformat() if self.ultimo_login else None,
             'tipo': 'platform',

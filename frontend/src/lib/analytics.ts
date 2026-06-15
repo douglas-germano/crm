@@ -40,6 +40,7 @@ export function trackEvent(event: AnalyticsEvent, properties?: Record<string, st
 export type AnalyticsEvent =
   | 'user_logged_in'
   | 'platform_user_logged_in'
+  | 'platform_impersonate'
   | 'user_logged_out'
   | 'page_viewed'
   | 'lead_criado'

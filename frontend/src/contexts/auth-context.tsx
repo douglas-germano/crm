@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, senha: string, workspace: string) => Promise<void>;
   loginSuperAdmin: (email: string, senha: string) => Promise<void>;
+  aplicarSessaoImpersonada: (data: { access_token: string; refresh_token: string; usuario: Usuario; workspace?: { nome_fantasia?: string } }) => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isPlatformSession: boolean;
@@ -94,6 +95,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     trackEvent('platform_user_logged_in', { email: usuario.email });
   };
 
+  const aplicarSessaoImpersonada: AuthContextType['aplicarSessaoImpersonada'] = (data) => {
+    // Super Admin assume a sessão de um usuário do tenant (suporte). Substitui a
+    // sessão de plataforma por uma sessão de tenant impersonada.
+    localStorage.setItem('token', data.access_token);
+    localStorage.setItem('refresh_token', data.refresh_token);
+    localStorage.setItem('auth_tipo', 'tenant');
+    localStorage.setItem('workspace_nome', data.workspace?.nome_fantasia || 'Impersonação');
+    localStorage.setItem('impersonacao', '1');
+    setUser(data.usuario);
+    setIsPlatformSession(false);
+    trackEvent('platform_impersonate', { usuario: data.usuario.email });
+  };
+
   const logout = async () => {
     try {
       await api.post('/api/v1/core/usuarios/logout');
@@ -106,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('auth_tipo');
     localStorage.removeItem('workspace_nome');
+    localStorage.removeItem('impersonacao');
     setUser(null);
     setIsPlatformSession(false);
   };
@@ -117,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         loginSuperAdmin,
+        aplicarSessaoImpersonada,
         logout,
         isAuthenticated: !!user,
         isPlatformSession,

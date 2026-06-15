@@ -1,12 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   Briefcase,
   Database,
+  Download,
   Eye,
+  KeyRound,
   Loader2,
+  LogIn,
+  Plus,
   Power,
   ShieldAlert,
   Users,
@@ -15,6 +20,19 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/auth-context';
+import { useToast } from '@/contexts/toast-context';
 import api from '@/lib/api';
 
 interface TenantStats {
@@ -29,6 +47,7 @@ interface Tenant {
   subdominio: string;
   db_schema: string;
   ativo: boolean;
+  motivo_inativacao?: string | null;
   criado_em: string;
   estatisticas: TenantStats;
 }
@@ -53,10 +72,18 @@ interface AuditLog {
 
 type Recurso = 'usuarios' | 'empresas' | 'leads';
 
+const NOVO_TENANT_VAZIO = { nome_empresa: '', workspace: '', nome_admin: '', email_admin: '', senha_admin: '' };
+
 export default function AdminPage() {
+  const router = useRouter();
+  const { aplicarSessaoImpersonada } = useAuth();
+  const { toast } = useToast();
+
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [totais, setTotais] = useState<DashboardTotals | null>(null);
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsPages, setLogsPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updatingTenant, setUpdatingTenant] = useState<number | null>(null);
@@ -66,25 +93,47 @@ export default function AdminPage() {
   const [inspectError, setInspectError] = useState('');
   const [recursoAtivo, setRecursoAtivo] = useState<Recurso>('usuarios');
 
+  // Modais
+  const [criando, setCriando] = useState(false);
+  const [novoTenant, setNovoTenant] = useState(NOVO_TENANT_VAZIO);
+  const [salvandoTenant, setSalvandoTenant] = useState(false);
+
+  const [inativando, setInativando] = useState<Tenant | null>(null);
+  const [motivoInativacao, setMotivoInativacao] = useState('');
+
+  const [resetAlvo, setResetAlvo] = useState<{ usuarioId: number; nome: string } | null>(null);
+  const [novaSenha, setNovaSenha] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
   useEffect(() => {
     carregarPainel();
   }, []);
+
+  useEffect(() => {
+    carregarLogs(logsPage);
+  }, [logsPage]);
 
   const carregarPainel = async () => {
     setLoading(true);
     setError('');
     try {
-      const [dashboard, audit] = await Promise.all([
-        api.get('/api/v1/core/super-admin/dashboard'),
-        api.get('/api/v1/core/super-admin/audit-logs'),
-      ]);
+      const dashboard = await api.get('/api/v1/core/super-admin/dashboard');
       setTenants(dashboard.data.tenants);
       setTotais(dashboard.data.totais);
-      setLogs(audit.data.logs);
     } catch {
       setError('Acesso negado. Entre pelo login Super Admin da plataforma.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const carregarLogs = async (page: number) => {
+    try {
+      const audit = await api.get(`/api/v1/core/super-admin/audit-logs?page=${page}&per_page=20`);
+      setLogs(audit.data.logs);
+      setLogsPages(audit.data.pages || 1);
+    } catch {
+      // silencioso — logs são secundários
     }
   };
 
@@ -93,7 +142,6 @@ export default function AdminPage() {
     setInspecting(tenantId);
     setRecursoAtivo(recurso);
     setInspectError('');
-
     try {
       const resp = await api.get(`/api/v1/core/super-admin/tenants/${tenantId}/${recurso}`);
       setTenantData(resp.data.dados);
@@ -103,12 +151,99 @@ export default function AdminPage() {
   };
 
   const alternarStatus = async (tenant: Tenant) => {
+    if (tenant.ativo) {
+      // Inativar é destrutivo → exige confirmação + motivo
+      setInativando(tenant);
+      setMotivoInativacao('');
+      return;
+    }
     setUpdatingTenant(tenant.id);
     try {
-      await api.patch(`/api/v1/core/super-admin/tenants/${tenant.id}/status`, { ativo: !tenant.ativo });
+      await api.patch(`/api/v1/core/super-admin/tenants/${tenant.id}/status`, { ativo: true });
+      toast('Tenant reativado.', 'success');
       await carregarPainel();
+    } catch {
+      toast('Falha ao reativar tenant.', 'error');
     } finally {
       setUpdatingTenant(null);
+    }
+  };
+
+  const confirmarInativacao = async () => {
+    if (!inativando) return;
+    setUpdatingTenant(inativando.id);
+    try {
+      await api.patch(`/api/v1/core/super-admin/tenants/${inativando.id}/status`, {
+        ativo: false,
+        motivo: motivoInativacao || undefined,
+      });
+      toast('Tenant inativado.', 'success');
+      setInativando(null);
+      await carregarPainel();
+    } catch {
+      toast('Falha ao inativar tenant.', 'error');
+    } finally {
+      setUpdatingTenant(null);
+    }
+  };
+
+  const criarTenant = async () => {
+    setSalvandoTenant(true);
+    try {
+      await api.post('/api/v1/core/super-admin/tenants', novoTenant);
+      toast('Tenant provisionado com sucesso.', 'success');
+      setCriando(false);
+      setNovoTenant(NOVO_TENANT_VAZIO);
+      await carregarPainel();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { erro?: string } } };
+      toast(ax?.response?.data?.erro || 'Falha ao criar tenant.', 'error');
+    } finally {
+      setSalvandoTenant(false);
+    }
+  };
+
+  const impersonar = async (tenantId: number, usuarioId: number) => {
+    try {
+      const resp = await api.post(`/api/v1/core/super-admin/tenants/${tenantId}/impersonar`, { usuario_id: usuarioId });
+      aplicarSessaoImpersonada(resp.data);
+      toast('Sessão assumida. Redirecionando…', 'info');
+      router.push('/dashboard');
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { erro?: string } } };
+      toast(ax?.response?.data?.erro || 'Falha ao impersonar usuário.', 'error');
+    }
+  };
+
+  const confirmarReset = async () => {
+    if (!resetAlvo || inspecting === null) return;
+    setResetLoading(true);
+    try {
+      await api.post(`/api/v1/core/super-admin/tenants/${inspecting}/usuarios/${resetAlvo.usuarioId}/reset-senha`, {
+        nova_senha: novaSenha,
+      });
+      toast('Senha redefinida. O usuário deverá trocá-la no próximo acesso.', 'success');
+      setResetAlvo(null);
+      setNovaSenha('');
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { erro?: string } } };
+      toast(ax?.response?.data?.erro || 'Falha ao redefinir senha.', 'error');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const exportarLogs = async () => {
+    try {
+      const resp = await api.get('/api/v1/core/super-admin/audit-logs/export', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([resp.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audit-logs.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast('Falha ao exportar logs.', 'error');
     }
   };
 
@@ -147,7 +282,12 @@ export default function AdminPage() {
             Operação global, suporte e governança de todos os workspaces.
           </p>
         </div>
-        <Button variant="outline" onClick={carregarPainel}>Atualizar</Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setCriando(true)}>
+            <Plus className="h-4 w-4" /> Novo Tenant
+          </Button>
+          <Button variant="outline" onClick={carregarPainel}>Atualizar</Button>
+        </div>
       </div>
 
       {totais && (
@@ -176,14 +316,17 @@ export default function AdminPage() {
                     <p className="mb-1 text-sm text-muted-foreground">
                       Workspace: <code className="font-mono text-foreground">{t.subdominio}</code>
                     </p>
-                    <p className="mb-4 text-sm text-muted-foreground">
+                    <p className="mb-1 text-sm text-muted-foreground">
                       Schema: <code className="font-mono text-foreground">{t.db_schema}</code>
                     </p>
+                    {!t.ativo && t.motivo_inativacao && (
+                      <p className="mb-3 text-xs text-destructive">Motivo: {t.motivo_inativacao}</p>
+                    )}
 
-                    <div className="flex w-fit gap-4 rounded border bg-muted/30 p-2 text-xs font-medium">
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3 text-steel-500" /> {t.estatisticas.usuarios} Usuários</span>
-                      <span className="flex items-center gap-1"><UsersRound className="h-3 w-3 text-emerald-500" /> {t.estatisticas.empresas} Empresas</span>
-                      <span className="flex items-center gap-1"><Briefcase className="h-3 w-3 text-amber-500" /> {t.estatisticas.leads} Leads</span>
+                    <div className="mt-2 flex w-fit gap-4 rounded border bg-muted/30 p-2 text-xs font-medium">
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3 text-steel-500" /> {t.estatisticas?.usuarios ?? '-'} Usuários</span>
+                      <span className="flex items-center gap-1"><UsersRound className="h-3 w-3 text-emerald-500" /> {t.estatisticas?.empresas ?? '-'} Empresas</span>
+                      <span className="flex items-center gap-1"><Briefcase className="h-3 w-3 text-amber-500" /> {t.estatisticas?.leads ?? '-'} Leads</span>
                     </div>
                   </div>
 
@@ -250,6 +393,16 @@ export default function AdminPage() {
                             </div>
                           );
                         })}
+                        {recursoAtivo === 'usuarios' && typeof d.id === 'number' && (
+                          <div className="mt-2 flex gap-2 border-t pt-2">
+                            <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => impersonar(tenantInspecionando.id, d.id as number)}>
+                              <LogIn className="h-3 w-3" /> Entrar como
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setResetAlvo({ usuarioId: d.id as number, nome: String(d.nome ?? d.email ?? d.id) })}>
+                              <KeyRound className="h-3 w-3" /> Reset senha
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -265,8 +418,15 @@ export default function AdminPage() {
 
           <Card>
             <CardHeader className="border-b pb-3">
-              <CardTitle className="text-base">Logs operacionais</CardTitle>
-              <CardDescription>Últimas ações de Super Admin.</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Logs operacionais</CardTitle>
+                  <CardDescription>Ações de Super Admin.</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" onClick={exportarLogs} title="Exportar CSV">
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="max-h-[300px] overflow-auto pt-4">
               <div className="space-y-3">
@@ -274,16 +434,107 @@ export default function AdminPage() {
                   <p className="text-sm text-muted-foreground">Nenhum log registrado.</p>
                 ) : logs.map(log => (
                   <div key={log.id} className="border-b pb-2 text-xs last:border-0">
-                    <p className="font-semibold text-foreground">{log.acao}</p>
+                    <p className="font-semibold text-foreground">{log.acao} {log.usuario ? <span className="font-normal text-muted-foreground">· {log.usuario}</span> : null}</p>
                     <p className="text-muted-foreground">{log.descricao || '-'}</p>
                     <p className="mt-1 text-[11px] text-muted-foreground">{new Date(log.data_criacao).toLocaleString('pt-BR')}</p>
                   </div>
                 ))}
               </div>
             </CardContent>
+            {logsPages > 1 && (
+              <div className="flex items-center justify-between border-t px-4 py-2 text-xs">
+                <Button variant="ghost" size="sm" disabled={logsPage <= 1} onClick={() => setLogsPage(p => p - 1)}>Anterior</Button>
+                <span className="text-muted-foreground">Página {logsPage} de {logsPages}</span>
+                <Button variant="ghost" size="sm" disabled={logsPage >= logsPages} onClick={() => setLogsPage(p => p + 1)}>Próxima</Button>
+              </div>
+            )}
           </Card>
         </div>
       </div>
+
+      {/* Modal: criar tenant */}
+      <Dialog open={criando} onOpenChange={setCriando}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Tenant</DialogTitle>
+            <DialogDescription>Provisiona um workspace completo (schema, perfis e usuário administrador).</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Nome da empresa</Label>
+              <Input value={novoTenant.nome_empresa} onChange={e => setNovoTenant({ ...novoTenant, nome_empresa: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Workspace (subdomínio)</Label>
+              <Input value={novoTenant.workspace} onChange={e => setNovoTenant({ ...novoTenant, workspace: e.target.value.toLowerCase() })} placeholder="apenas letras e números" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Nome do admin</Label>
+                <Input value={novoTenant.nome_admin} onChange={e => setNovoTenant({ ...novoTenant, nome_admin: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Email do admin</Label>
+                <Input type="email" value={novoTenant.email_admin} onChange={e => setNovoTenant({ ...novoTenant, email_admin: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Senha inicial do admin</Label>
+              <Input type="password" value={novoTenant.senha_admin} onChange={e => setNovoTenant({ ...novoTenant, senha_admin: e.target.value })} placeholder="mín. 8 caracteres, com letra e número" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCriando(false)}>Cancelar</Button>
+            <Button onClick={criarTenant} disabled={salvandoTenant}>
+              {salvandoTenant && <Loader2 className="h-4 w-4 animate-spin" />} Provisionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: confirmar inativação (destrutivo) */}
+      <Dialog open={!!inativando} onOpenChange={(o) => !o && setInativando(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Inativar tenant</DialogTitle>
+            <DialogDescription>
+              Isto bloqueia o acesso de <b>todos os usuários</b> de <b>{inativando?.nome_fantasia}</b>. Eles não conseguirão fazer login até a reativação.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1">
+            <Label>Motivo (registrado na auditoria)</Label>
+            <Textarea value={motivoInativacao} onChange={e => setMotivoInativacao(e.target.value)} placeholder="Ex.: inadimplência, solicitação do cliente…" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInativando(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmarInativacao} disabled={updatingTenant === inativando?.id}>
+              {updatingTenant === inativando?.id && <Loader2 className="h-4 w-4 animate-spin" />} Confirmar inativação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: reset de senha */}
+      <Dialog open={!!resetAlvo} onOpenChange={(o) => !o && setResetAlvo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir senha</DialogTitle>
+            <DialogDescription>
+              Nova senha para <b>{resetAlvo?.nome}</b>. O usuário será obrigado a trocá-la no próximo acesso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1">
+            <Label>Nova senha</Label>
+            <Input type="password" value={novaSenha} onChange={e => setNovaSenha(e.target.value)} placeholder="mín. 8 caracteres, com letra e número" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetAlvo(null)}>Cancelar</Button>
+            <Button onClick={confirmarReset} disabled={resetLoading || novaSenha.length < 8}>
+              {resetLoading && <Loader2 className="h-4 w-4 animate-spin" />} Redefinir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

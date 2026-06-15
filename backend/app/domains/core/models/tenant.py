@@ -12,6 +12,7 @@ class Tenant(db.Model):
     db_schema = db.Column(db.String(50), unique=True, nullable=False)
     webhook_token = db.Column(db.String(64), unique=True, nullable=True)
     ativo = db.Column(db.Boolean, default=True)
+    motivo_inativacao = db.Column(db.String(255))
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -21,5 +22,6 @@ class Tenant(db.Model):
             'subdominio': self.subdominio,
             'db_schema': self.db_schema,
             'ativo': self.ativo,
+            'motivo_inativacao': self.motivo_inativacao,
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None
         }
