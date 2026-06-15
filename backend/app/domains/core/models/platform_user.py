@@ -72,6 +72,26 @@ class PlatformUser(db.Model):
         }
 
 
+class PlatformConfig(db.Model):
+    """Configurações globais da plataforma (linha única, id=1)."""
+    __tablename__ = 'platform_config'
+    __table_args__ = {'schema': 'public'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    inscricoes_abertas = db.Column(db.Boolean, default=True, nullable=False)
+    modo_manutencao = db.Column(db.Boolean, default=False, nullable=False)
+    forcar_2fa = db.Column(db.Boolean, default=False, nullable=False)
+    atualizado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'inscricoes_abertas': bool(self.inscricoes_abertas),
+            'modo_manutencao': bool(self.modo_manutencao),
+            'forcar_2fa': bool(self.forcar_2fa),
+            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None,
+        }
+
+
 class PlatformAuditLog(db.Model):
     __tablename__ = 'platform_audit_logs'
     __table_args__ = {'schema': 'public'}

@@ -11,6 +11,7 @@ import {
   KeyRound,
   Loader2,
   LogIn,
+  Pencil,
   Plus,
   Power,
   ShieldAlert,
@@ -39,6 +40,8 @@ interface TenantStats {
   usuarios: number;
   empresas: number;
   leads: number;
+  negocios?: number;
+  ultimo_acesso?: string | null;
 }
 
 interface Tenant {
@@ -84,6 +87,8 @@ export default function AdminPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [logsPage, setLogsPage] = useState(1);
   const [logsPages, setLogsPages] = useState(1);
+  const [filtroAcao, setFiltroAcao] = useState('');
+  const [filtroData, setFiltroData] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updatingTenant, setUpdatingTenant] = useState<number | null>(null);
@@ -101,6 +106,10 @@ export default function AdminPage() {
   const [inativando, setInativando] = useState<Tenant | null>(null);
   const [motivoInativacao, setMotivoInativacao] = useState('');
 
+  const [editando, setEditando] = useState<Tenant | null>(null);
+  const [novoNome, setNovoNome] = useState('');
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+
   const [resetAlvo, setResetAlvo] = useState<{ usuarioId: number; nome: string } | null>(null);
   const [novaSenha, setNovaSenha] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
@@ -111,7 +120,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     carregarLogs(logsPage);
-  }, [logsPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logsPage, filtroAcao, filtroData]);
 
   const carregarPainel = async () => {
     setLoading(true);
@@ -129,11 +139,30 @@ export default function AdminPage() {
 
   const carregarLogs = async (page: number) => {
     try {
-      const audit = await api.get(`/api/v1/core/super-admin/audit-logs?page=${page}&per_page=20`);
+      const params = new URLSearchParams({ page: String(page), per_page: '20' });
+      if (filtroAcao) params.set('acao', filtroAcao);
+      if (filtroData) params.set('data_inicio', `${filtroData}T00:00:00`);
+      const audit = await api.get(`/api/v1/core/super-admin/audit-logs?${params.toString()}`);
       setLogs(audit.data.logs);
       setLogsPages(audit.data.pages || 1);
     } catch {
       // silencioso — logs são secundários
+    }
+  };
+
+  const editarTenant = async () => {
+    if (!editando) return;
+    setSalvandoEdicao(true);
+    try {
+      await api.put(`/api/v1/core/super-admin/tenants/${editando.id}`, { nome_fantasia: novoNome });
+      toast('Tenant atualizado.', 'success');
+      setEditando(null);
+      await carregarPainel();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { erro?: string } } };
+      toast(ax?.response?.data?.erro || 'Falha ao atualizar tenant.', 'error');
+    } finally {
+      setSalvandoEdicao(false);
     }
   };
 
@@ -323,14 +352,21 @@ export default function AdminPage() {
                       <p className="mb-3 text-xs text-destructive">Motivo: {t.motivo_inativacao}</p>
                     )}
 
-                    <div className="mt-2 flex w-fit gap-4 rounded border bg-muted/30 p-2 text-xs font-medium">
+                    <div className="mt-2 flex w-fit flex-wrap gap-4 rounded border bg-muted/30 p-2 text-xs font-medium">
                       <span className="flex items-center gap-1"><Users className="h-3 w-3 text-steel-500" /> {t.estatisticas?.usuarios ?? '-'} Usuários</span>
                       <span className="flex items-center gap-1"><UsersRound className="h-3 w-3 text-emerald-500" /> {t.estatisticas?.empresas ?? '-'} Empresas</span>
                       <span className="flex items-center gap-1"><Briefcase className="h-3 w-3 text-amber-500" /> {t.estatisticas?.leads ?? '-'} Leads</span>
+                      <span className="flex items-center gap-1"><Briefcase className="h-3 w-3 text-sky-500" /> {t.estatisticas?.negocios ?? '-'} Negócios</span>
                     </div>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      Último acesso: {t.estatisticas?.ultimo_acesso ? new Date(t.estatisticas.ultimo_acesso).toLocaleString('pt-BR') : 'sem registro'}
+                    </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2 md:max-w-[180px] md:flex-col">
+                    <Button variant="outline" size="sm" onClick={() => { setEditando(t); setNovoNome(t.nome_fantasia); }}>
+                      <Pencil className="h-3.5 w-3.5" /> Editar
+                    </Button>
                     <Button variant={inspecting === t.id && recursoAtivo === 'usuarios' ? 'default' : 'outline'} size="sm" onClick={() => visualizarDados(t.id, 'usuarios')}>
                       Ver Usuários
                     </Button>
@@ -427,6 +463,20 @@ export default function AdminPage() {
                   <Download className="h-4 w-4" />
                 </Button>
               </div>
+              <div className="mt-3 flex gap-2">
+                <Input
+                  className="h-8 text-xs"
+                  placeholder="Filtrar por ação (ex.: login)"
+                  value={filtroAcao}
+                  onChange={e => { setLogsPage(1); setFiltroAcao(e.target.value.trim()); }}
+                />
+                <Input
+                  type="date"
+                  className="h-8 w-[140px] text-xs"
+                  value={filtroData}
+                  onChange={e => { setLogsPage(1); setFiltroData(e.target.value); }}
+                />
+              </div>
             </CardHeader>
             <CardContent className="max-h-[300px] overflow-auto pt-4">
               <div className="space-y-3">
@@ -487,6 +537,28 @@ export default function AdminPage() {
             <Button variant="outline" onClick={() => setCriando(false)}>Cancelar</Button>
             <Button onClick={criarTenant} disabled={salvandoTenant}>
               {salvandoTenant && <Loader2 className="h-4 w-4 animate-spin" />} Provisionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: editar tenant */}
+      <Dialog open={!!editando} onOpenChange={(o) => !o && setEditando(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar tenant</DialogTitle>
+            <DialogDescription>
+              Workspace <code className="font-mono">{editando?.subdominio}</code> — o subdomínio/schema não pode ser alterado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1">
+            <Label>Nome fantasia</Label>
+            <Input value={novoNome} onChange={e => setNovoNome(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditando(null)}>Cancelar</Button>
+            <Button onClick={editarTenant} disabled={salvandoEdicao || !novoNome.trim()}>
+              {salvandoEdicao && <Loader2 className="h-4 w-4 animate-spin" />} Salvar
             </Button>
           </DialogFooter>
         </DialogContent>

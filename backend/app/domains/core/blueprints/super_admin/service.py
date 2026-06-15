@@ -16,6 +16,7 @@ from app import db
 from app.domains.core.models import (
     Perfil,
     PlatformAuditLog,
+    PlatformConfig,
     PlatformUser,
     Tenant,
     Usuario,
@@ -76,10 +77,13 @@ def tenant_stats(tenant):
     if not schema_valido(tenant.db_schema):
         return {'erro': 'schema_invalido'}
     with usar_schema(tenant.db_schema):
+        ultimo = db.session.scalar(text('SELECT max(ultimo_login) FROM usuarios'))
         return {
             'usuarios': db.session.scalar(text('SELECT count(*) FROM usuarios')),
             'empresas': db.session.scalar(text('SELECT count(*) FROM empresas')),
             'leads': db.session.scalar(text('SELECT count(*) FROM leads')),
+            'negocios': db.session.scalar(text('SELECT count(*) FROM negocios')),
+            'ultimo_acesso': ultimo.isoformat() if ultimo else None,
         }
 
 
@@ -295,6 +299,29 @@ def atualizar_operador(operador, data):
         operador.senha = data['senha']
     db.session.commit()
     return operador, None
+
+
+# ---------------------------------------------------------------------------
+# Configuração global da plataforma
+# ---------------------------------------------------------------------------
+
+def obter_config():
+    """Retorna a linha única de configuração, criando-a se ainda não existir."""
+    config = db.session.get(PlatformConfig, 1)
+    if config is None:
+        config = PlatformConfig(id=1)
+        db.session.add(config)
+        db.session.commit()
+    return config
+
+
+def atualizar_config(data):
+    config = obter_config()
+    for campo in ('inscricoes_abertas', 'modo_manutencao', 'forcar_2fa'):
+        if campo in data:
+            setattr(config, campo, bool(data[campo]))
+    db.session.commit()
+    return config
 
 
 # ---------------------------------------------------------------------------

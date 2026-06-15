@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 import { Loader2, ShieldCheck, ShieldAlert, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,7 @@ export default function SegurancaPage() {
   const [habilitado, setHabilitado] = useState(false);
 
   const [setup, setSetup] = useState<{ secret: string; otpauth_uri: string } | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState('');
   const [codigo, setCodigo] = useState('');
   const [processando, setProcessando] = useState(false);
 
@@ -42,6 +44,9 @@ export default function SegurancaPage() {
     try {
       const resp = await api.post('/api/v1/core/super-admin/mfa/setup');
       setSetup(resp.data);
+      // Gera o QR localmente (não envia o segredo a terceiros)
+      const url = await QRCode.toDataURL(resp.data.otpauth_uri, { margin: 1, width: 200 });
+      setQrDataUrl(url);
     } catch {
       toast('Falha ao iniciar configuração do 2FA.', 'error');
     } finally {
@@ -56,7 +61,9 @@ export default function SegurancaPage() {
       toast('2FA ativado com sucesso.', 'success');
       setSetup(null);
       setCodigo('');
-      await carregar();
+      // Recarrega para que o estado global (auth-context) reflita o 2FA ativo
+      // e libere o painel quando a política de 2FA obrigatório estiver ligada.
+      setTimeout(() => { window.location.href = '/admin'; }, 600);
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { erro?: string } } };
       toast(ax?.response?.data?.erro || 'Código inválido.', 'error');
@@ -125,7 +132,12 @@ export default function SegurancaPage() {
           ) : setup ? (
             <div className="space-y-4">
               <div className="rounded-lg border bg-muted/40 p-4">
-                <p className="mb-2 text-sm font-medium">1. Adicione esta chave no seu app autenticador</p>
+                <p className="mb-3 text-sm font-medium">1. Escaneie o QR Code no seu app autenticador</p>
+                {qrDataUrl && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={qrDataUrl} alt="QR Code 2FA" className="mb-3 rounded border bg-white p-2" width={200} height={200} />
+                )}
+                <p className="mb-2 text-xs text-muted-foreground">ou adicione a chave manualmente:</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 break-all rounded bg-background px-3 py-2 font-mono text-sm">{setup.secret}</code>
                   <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(setup.secret); toast('Chave copiada.', 'info'); }}>
@@ -139,7 +151,7 @@ export default function SegurancaPage() {
                 <Input value={codigo} onChange={e => setCodigo(e.target.value)} placeholder="000000" maxLength={6} inputMode="numeric" />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => { setSetup(null); setCodigo(''); }}>Cancelar</Button>
+                <Button variant="outline" onClick={() => { setSetup(null); setCodigo(''); setQrDataUrl(''); }}>Cancelar</Button>
                 <Button onClick={ativar} disabled={processando || codigo.length !== 6}>
                   {processando && <Loader2 className="h-4 w-4 animate-spin" />} Ativar 2FA
                 </Button>

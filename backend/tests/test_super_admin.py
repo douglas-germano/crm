@@ -92,5 +92,25 @@ class TestBloqueioPlatformUser(unittest.TestCase):
         self.assertFalse(u.is_super_admin)
 
 
+class TestPlatformConfig(unittest.TestCase):
+    def setUp(self):
+        from app.domains.core.models import PlatformConfig
+        self.PlatformConfig = PlatformConfig
+
+    def test_to_dict_chaves(self):
+        c = self.PlatformConfig()
+        c.inscricoes_abertas = True
+        c.modo_manutencao = False
+        c.forcar_2fa = True
+        d = c.to_dict()
+        self.assertEqual(
+            set(d.keys()),
+            {'inscricoes_abertas', 'modo_manutencao', 'forcar_2fa', 'atualizado_em'},
+        )
+        self.assertTrue(d['inscricoes_abertas'])
+        self.assertFalse(d['modo_manutencao'])
+        self.assertTrue(d['forcar_2fa'])
+
+
 if __name__ == '__main__':
     unittest.main()

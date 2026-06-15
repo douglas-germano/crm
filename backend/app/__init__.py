@@ -109,6 +109,21 @@ def create_app(config_name=None):
         usuarios_endpoints = domain_endpoint_prefixes(['usuarios'])
         tenants_endpoints = domain_endpoint_prefixes(['tenants'])
         webhook_endpoints = domain_endpoint_prefixes(['webhook'])
+        super_admin_endpoints = domain_endpoint_prefixes(['super_admin'])
+        super_admin_prefixes = tuple(f'{prefix}.' for prefix in super_admin_endpoints)
+
+        # Modo manutenção: bloqueia toda a operação de tenants, mantendo o painel
+        # da plataforma (super-admin) e o health check acessíveis.
+        ep = request.endpoint or ''
+        is_health = 'health' in ep or (request.path or '').rstrip('/').endswith('/health')
+        if not ep.startswith(super_admin_prefixes) and not is_health:
+            try:
+                from app.domains.core.models import PlatformConfig
+                config = db.session.get(PlatformConfig, 1)
+                if config and config.modo_manutencao:
+                    return jsonify({'erro': 'Sistema em manutenção. Tente novamente em instantes.'}), 503
+            except Exception:
+                db.session.rollback()
 
         exempt_endpoints = {
             f'{prefix}.login' for prefix in usuarios_endpoints
@@ -127,9 +142,6 @@ def create_app(config_name=None):
                     or request.endpoint.startswith(exempt_prefixes)
                     or request.endpoint in exempt_webhook_endpoints):
                 return
-
-        super_admin_endpoints = domain_endpoint_prefixes(['super_admin'])
-        super_admin_prefixes = tuple(f'{prefix}.' for prefix in super_admin_endpoints)
 
         try:
             verify_jwt_in_request(optional=True)

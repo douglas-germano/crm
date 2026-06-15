@@ -14,6 +14,8 @@ export default function SuperAdminLoginPage() {
   const { loginSuperAdmin, isAuthenticated, isPlatformSession, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [codigoMfa, setCodigoMfa] = useState('');
+  const [mfaRequerido, setMfaRequerido] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,11 +30,21 @@ export default function SuperAdminLoginPage() {
     setError('');
     setSubmitting(true);
     try {
-      await loginSuperAdmin(email, senha);
-      router.push('/admin');
+      const res = await loginSuperAdmin(email, senha, mfaRequerido ? codigoMfa : undefined);
+      if (res.mfaRequired) {
+        setMfaRequerido(true);
+        setError('');
+        return;
+      }
+      // Política global pode exigir configurar o 2FA antes de operar
+      router.push(res.mfaSetupRequired ? '/admin/seguranca' : '/admin');
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { erro?: string } } };
-      setError(ax?.response?.data?.erro || 'Falha na autenticacao Super Admin.');
+      const ax = err as { response?: { status?: number; data?: { erro?: string } } };
+      if (ax?.response?.status === 429) {
+        setError(ax.response.data?.erro || 'Conta temporariamente bloqueada. Aguarde alguns minutos.');
+      } else {
+        setError(ax?.response?.data?.erro || 'Falha na autenticacao Super Admin.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -57,11 +69,27 @@ export default function SuperAdminLoginPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="senha">Senha</Label>
-              <Input id="senha" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required />
+              <Input id="senha" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required disabled={mfaRequerido} />
             </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
+            {mfaRequerido && (
+              <div className="space-y-2">
+                <Label htmlFor="codigo">Código de verificação (2FA)</Label>
+                <Input
+                  id="codigo"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoFocus
+                  placeholder="000000"
+                  value={codigoMfa}
+                  onChange={(e) => setCodigoMfa(e.target.value.replace(/\D/g, ''))}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Abra seu app autenticador e informe o código de 6 dígitos.</p>
+              </div>
+            )}
+            <Button type="submit" className="w-full" disabled={submitting || (mfaRequerido && codigoMfa.length !== 6)}>
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Entrar na plataforma
+              {mfaRequerido ? 'Verificar e entrar' : 'Entrar na plataforma'}
             </Button>
           </form>
         </CardContent>

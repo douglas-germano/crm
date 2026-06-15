@@ -8,6 +8,8 @@ export interface Usuario {
   papel?: string;
   tipo?: 'tenant' | 'platform';
   is_super_admin?: boolean;
+  mfa_habilitado?: boolean;
+  bloqueado?: boolean;
   ativo: boolean;
   deve_trocar_senha?: boolean;
   data_criacao: string;

@@ -81,7 +81,16 @@ def login():
     refresh = create_refresh_token(identity=f'platform:{user.id}', additional_claims=claims)
     service.registrar_auditoria('login', 'platform_user', user.id, 'Login Super Admin', platform_user_id=user.id)
 
-    return jsonify({'access_token': token, 'refresh_token': refresh, 'usuario': user.to_dict()}), 200
+    # Política global de 2FA obrigatório: sinaliza ao front que o operador precisa configurar
+    config = service.obter_config()
+    mfa_setup_requerido = bool(config.forcar_2fa) and not user.mfa_habilitado
+
+    return jsonify({
+        'access_token': token,
+        'refresh_token': refresh,
+        'usuario': user.to_dict(),
+        'mfa_setup_requerido': mfa_setup_requerido,
+    }), 200
 
 
 @super_admin_bp.route('/refresh', methods=['POST'])
@@ -103,6 +112,24 @@ def refresh():
 @requer_operador_plataforma
 def me():
     return jsonify({'usuario': _operador_atual().to_dict()}), 200
+
+
+# ---------------------------------------------------------------------------
+# Configuração global da plataforma
+# ---------------------------------------------------------------------------
+
+@super_admin_bp.route('/config', methods=['GET'])
+@requer_operador_plataforma
+def obter_config():
+    return jsonify({'config': service.obter_config().to_dict()}), 200
+
+
+@super_admin_bp.route('/config', methods=['PUT'])
+@requer_super_admin
+def atualizar_config():
+    config = service.atualizar_config(request.get_json() or {})
+    service.registrar_auditoria('atualizar_config', 'platform', None, f'Config atualizada: {config.to_dict()}', platform_user_id=_platform_user_id())
+    return jsonify({'config': config.to_dict()}), 200
 
 
 # ---------------------------------------------------------------------------

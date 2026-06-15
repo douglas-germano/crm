@@ -9,6 +9,10 @@ from sqlalchemy import text
 def registrar_tenant():
     data = request.get_json()
 
+    # Respeita a política global de inscrições da plataforma
+    if not super_admin_service.obter_config().inscricoes_abertas:
+        return jsonify({'erro': 'As inscrições estão temporariamente fechadas.'}), 403
+
     required_fields = ['nome_empresa', 'workspace', 'nome_admin', 'email_admin', 'senha_admin']
     if not data or not all(k in data for k in required_fields):
         return jsonify({'erro': 'Todos os campos (nome da empresa, workspace, nome, email e senha) são obrigatórios.'}), 400

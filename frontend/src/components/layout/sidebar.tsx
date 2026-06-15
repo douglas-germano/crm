@@ -96,11 +96,10 @@ const inspectNavSections = [
 ];
 
 const adminNavLinks = [
-  { href: '/admin',                      label: 'Matrix (Tenants)',   icon: LayoutDashboard     },
-  { href: '/admin/operadores',           label: 'Operadores',         icon: Users               },
-  { href: '/admin/seguranca',            label: 'Segurança (2FA)',    icon: ShieldAlert         },
-  { href: '/admin/settings',             label: 'Configurações SaaS', icon: Settings            },
-  { href: '/admin/settings/privacidade', label: 'Privacidade (LGPD)', icon: ShieldCheck         },
+  { href: '/admin',            label: 'Matrix (Tenants)',   icon: LayoutDashboard },
+  { href: '/admin/operadores', label: 'Operadores',         icon: Users           },
+  { href: '/admin/seguranca',  label: 'Segurança (2FA)',    icon: ShieldAlert     },
+  { href: '/admin/settings',   label: 'Configurações SaaS', icon: Settings        },
 ];
 
 // ---------------------------------------------------------------------------

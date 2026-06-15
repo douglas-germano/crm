@@ -2,7 +2,7 @@ from app.domains.core.models.tenant import Tenant
 from app.domains.core.models.usuario import Usuario
 from app.domains.core.models.perfil import Perfil, Permissao
 from app.domains.core.models.log_atividade import LogAtividade
-from app.domains.core.models.platform_user import PlatformAuditLog, PlatformUser
+from app.domains.core.models.platform_user import PlatformAuditLog, PlatformConfig, PlatformUser
 from app.domains.crm.models.lead import Lead
 from app.domains.crm.models.pipeline import Pipeline, Estagio, LeadEstagio
 from app.domains.crm.models.negocio import Negocio, AtividadeNegocio
