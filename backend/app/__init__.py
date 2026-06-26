@@ -110,13 +110,14 @@ def create_app(config_name=None):
         tenants_endpoints = domain_endpoint_prefixes(['tenants'])
         webhook_endpoints = domain_endpoint_prefixes(['webhook'])
         super_admin_endpoints = domain_endpoint_prefixes(['super_admin'])
-        super_admin_prefixes = tuple(f'{prefix}.' for prefix in super_admin_endpoints)
+        auth_endpoints = domain_endpoint_prefixes(['auth'])
+        # Rotas que um token de plataforma pode acessar (painel + sessão unificada)
+        plataforma_prefixes = tuple(f'{prefix}.' for prefix in (super_admin_endpoints | auth_endpoints))
 
-        # Modo manutenção: bloqueia toda a operação de tenants, mantendo o painel
-        # da plataforma (super-admin) e o health check acessíveis.
+        # Modo manutenção: bloqueia operação de tenants; libera plataforma, /auth e health.
         ep = request.endpoint or ''
         is_health = 'health' in ep or (request.path or '').rstrip('/').endswith('/health')
-        if not ep.startswith(super_admin_prefixes) and not is_health:
+        if not ep.startswith(plataforma_prefixes) and not is_health:
             try:
                 from app.domains.core.models import PlatformConfig
                 config = db.session.get(PlatformConfig, 1)
@@ -146,14 +147,15 @@ def create_app(config_name=None):
         try:
             verify_jwt_in_request(optional=True)
             claims = get_jwt()
-            if claims and claims.get('tipo') == 'platform':
-                # Defesa em profundidade: token de plataforma só acessa rotas super-admin.
-                # Não troca de schema — opera sempre no schema público global.
-                if request.endpoint and not request.endpoint.startswith(super_admin_prefixes):
+            scope = claims.get('scope') if claims else None
+            if scope == 'platform':
+                # Defesa em profundidade: token de plataforma só acessa rotas de
+                # plataforma e /auth. Opera sempre no schema público global.
+                if request.endpoint and not request.endpoint.startswith(plataforma_prefixes):
                     from flask import abort
                     abort(403)
-            elif claims and 'schema' in claims:
-                schema = claims['schema']
+            elif scope == 'tenant' and claims.get('tenant'):
+                schema = claims['tenant']
                 if not re.match(r'^[a-z_][a-z0-9_]*$', schema):
                     from flask import abort
                     abort(400)

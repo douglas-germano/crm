@@ -1,5 +1,5 @@
-from flask import request, jsonify, current_app, abort
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
+from flask import request, jsonify, current_app, abort, make_response
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from datetime import datetime, timezone
 from functools import wraps
 import re
@@ -8,27 +8,34 @@ import uuid
 from app import db, limiter
 from app.domains.core.models import LogAtividade, Perfil, Permissao, Tenant, Usuario
 from app.utils.decorators import token_required
+from app.utils.auth_tokens import emitir_sessao_tenant
 from app.domains.core.blueprints.usuarios import usuarios_bp
 from sqlalchemy import or_, text
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from app.utils.email_service import enviar_email
 
 
-# Decorator para verificar permissões (usado por outros blueprints via import)
+# Decorator para verificar permissões (usado por outros blueprints via import).
+# Exige token de tenant, revalida revogação (token_version) e checa a permissão.
 def requer_permissao(codigo_permissao):
     def decorator(f):
         @wraps(f)
         @jwt_required()
         def decorated_function(*args, **kwargs):
-            identity = get_jwt_identity()
+            claims = get_jwt()
+            if claims.get('scope') != 'tenant':
+                return jsonify({'erro': 'Token inválido para este recurso'}), 403
             try:
-                usuario_id = int(identity)
-                usuario = db.session.get(Usuario, usuario_id)
+                usuario = db.session.get(Usuario, int(get_jwt_identity()))
             except (ValueError, TypeError):
                 return jsonify({'erro': 'Token inválido'}), 401
 
             if not usuario:
                 return jsonify({'erro': 'Usuário não encontrado'}), 404
+            if not usuario.ativo:
+                return jsonify({'erro': 'Usuário desativado'}), 403
+            if claims.get('ver') != (usuario.token_version or 0):
+                return jsonify({'erro': 'Sessão revogada. Faça login novamente.'}), 401
 
             for permissao in usuario.perfil.permissoes:
                 if permissao.codigo == codigo_permissao:
@@ -103,33 +110,12 @@ def login():
 
     registrar_log(usuario.id, 'login', 'usuarios', 'Login realizado com sucesso')
 
-    adicional = {'schema': tenant.db_schema}
-    access_token = create_access_token(identity=str(usuario.id), additional_claims=adicional)
-    refresh_token = create_refresh_token(identity=str(usuario.id), additional_claims=adicional)
-
-    return jsonify({
-        'access_token': access_token,
-        'refresh_token': refresh_token,
+    # Sessão via cookies httpOnly (refresh/logout/me ficam em /api/v1/core/auth/*)
+    resp = make_response(jsonify({
         'usuario': usuario.to_dict(),
-        'workspace': tenant.to_dict()
-    }), 200
-
-
-@usuarios_bp.route('/refresh', methods=['POST'])
-@jwt_required(refresh=True)
-def refresh_token():
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    additional = {'schema': claims['schema']} if 'schema' in claims else {}
-    access_token = create_access_token(identity=identity, additional_claims=additional)
-    return jsonify({'access_token': access_token}), 200
-
-
-@usuarios_bp.route('/logout', methods=['POST'])
-@jwt_required()
-def logout():
-    registrar_log(get_jwt_identity(), 'logout', 'usuarios', 'Logout realizado')
-    return jsonify({'mensagem': 'Logout realizado com sucesso'}), 200
+        'workspace': tenant.to_dict(),
+    }), 200)
+    return emitir_sessao_tenant(resp, usuario, tenant)
 
 
 @usuarios_bp.route('/perfil', methods=['GET'])
@@ -168,6 +154,7 @@ def atualizar_perfil_usuario():
 
         if 'senha' in data and data['senha']:
             usuario.senha = data['senha']
+            usuario.revogar_tokens()  # invalida outras sessões ao trocar a senha
 
         db.session.commit()
 
@@ -201,6 +188,7 @@ def alterar_senha(usuario_atual):
 
         usuario_atual.senha = data['nova_senha']
         usuario_atual.deve_trocar_senha = False
+        usuario_atual.revogar_tokens()
         db.session.commit()
 
         registrar_log(
@@ -302,6 +290,7 @@ def atualizar_usuario(id):
 
     if 'senha' in data:
         usuario.senha = data['senha']
+        usuario.revogar_tokens()
 
     if 'perfil_id' in data:
         perfil = db.session.get(Perfil, data['perfil_id'])
@@ -335,6 +324,7 @@ def excluir_usuario(id):
         abort(404)
 
     usuario.ativo = False
+    usuario.revogar_tokens()  # encerra sessões ativas do usuário desativado
     db.session.commit()
 
     registrar_log(
@@ -694,6 +684,7 @@ def redefinir_senha():
 
     usuario.senha = nova_senha
     usuario.deve_trocar_senha = False
+    usuario.revogar_tokens()
 
     db.session.commit()
 

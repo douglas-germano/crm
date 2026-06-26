@@ -27,7 +27,14 @@ class PlatformUser(db.Model):
     tentativas_falhas = db.Column(db.Integer, default=0, nullable=False)
     bloqueado_ate = db.Column(db.DateTime)
 
+    # Revogação: tokens carregam esta versão; incrementar invalida todos os tokens existentes
+    token_version = db.Column(db.Integer, default=0, nullable=False)
+
     PAPEIS_VALIDOS = ('super_admin', 'suporte')
+
+    def revogar_tokens(self):
+        """Invalida todos os tokens ativos deste operador (logout-all/segurança)."""
+        self.token_version = (self.token_version or 0) + 1
 
     @property
     def senha(self):

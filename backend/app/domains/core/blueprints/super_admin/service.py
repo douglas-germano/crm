@@ -9,7 +9,6 @@ import threading
 from datetime import datetime, timedelta, timezone
 
 from flask import request
-from flask_jwt_extended import create_access_token, create_refresh_token
 from sqlalchemy import text
 
 from app import db
@@ -237,30 +236,31 @@ def resetar_senha_usuario_tenant(tenant, usuario_id, nova_senha):
             return None
         usuario.senha = nova_senha  # valida força via setter do model
         usuario.deve_trocar_senha = True
+        usuario.revogar_tokens()    # encerra sessões existentes do usuário
         db.session.commit()
         return usuario.to_dict()
 
 
-def gerar_token_impersonacao(tenant, platform_user, usuario_id):
-    """Gera um token de tenant para o Super Admin atuar como um usuário (suporte).
+def gerar_tokens_impersonacao(tenant, platform_user, usuario_id):
+    """Gera (access, refresh, alvo) de tenant para o Super Admin atuar como usuário.
 
-    O token carrega `impersonado_por` para rastreabilidade na auditoria.
+    Os tokens carregam `impersonado_por`/`impersonacao` para rastreabilidade.
+    Construídos dentro do schema para resolver as claims (papel/versão) corretamente.
     """
+    from flask_jwt_extended import create_access_token, create_refresh_token
+    from app.utils.auth_tokens import claims_tenant
+
     with usar_schema(tenant.db_schema):
         usuario = db.session.get(Usuario, usuario_id)
         if not usuario or not usuario.ativo:
-            return None, None
+            return None, None, None
         alvo = usuario.to_dict()
-
-    claims = {
-        'schema': tenant.db_schema,
-        'tipo': 'tenant',
-        'impersonado_por': platform_user.id,
-        'impersonacao': True,
-    }
-    access = create_access_token(identity=str(usuario_id), additional_claims=claims)
-    refresh = create_refresh_token(identity=str(usuario_id), additional_claims=claims)
-    return {'access_token': access, 'refresh_token': refresh, 'usuario': alvo, 'workspace': tenant.to_dict()}, alvo
+        claims = claims_tenant(usuario, tenant)
+        claims.update({'impersonado_por': platform_user.id, 'impersonacao': True})
+        identity = str(usuario_id)
+        access = create_access_token(identity=identity, additional_claims=claims)
+        refresh = create_refresh_token(identity=identity, additional_claims=claims)
+    return access, refresh, alvo
 
 
 # ---------------------------------------------------------------------------
@@ -292,11 +292,16 @@ def atualizar_operador(operador, data):
     if 'papel' in data:
         if data['papel'] not in PlatformUser.PAPEIS_VALIDOS:
             return None, ('Papel inválido.', 400)
+        if data['papel'] != operador.papel:
+            operador.revogar_tokens()  # mudança de papel invalida sessões
         operador.papel = data['papel']
     if 'ativo' in data:
+        if not data['ativo']:
+            operador.revogar_tokens()  # desativação encerra sessões
         operador.ativo = bool(data['ativo'])
     if data.get('senha'):
         operador.senha = data['senha']
+        operador.revogar_tokens()
     db.session.commit()
     return operador, None
 

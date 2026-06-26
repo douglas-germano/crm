@@ -71,14 +71,8 @@ export default function PortalClientePage() {
 
   const baixarPdfLaudo = async (inspecaoId: number) => {
     try {
-      const token = localStorage.getItem('token');
-      const url = `${api.defaults.baseURL}/api/v1/inspect/inspecoes/${inspecaoId}/pdf`;
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error('Erro ao baixar PDF');
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      const response = await api.get(`/api/v1/inspect/inspecoes/${inspecaoId}/pdf`, { responseType: 'blob' });
+      const blobUrl = URL.createObjectURL(response.data);
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = `laudo-${inspecaoId}.pdf`;

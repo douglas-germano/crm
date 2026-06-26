@@ -2,14 +2,12 @@ import csv
 import io
 from datetime import datetime
 
-from flask import Response, abort, jsonify, request
-from flask_jwt_extended import (
-    create_access_token,
-    create_refresh_token,
-    get_jwt,
-    get_jwt_identity,
-    jwt_required,
-)
+import csv
+import io
+from datetime import datetime
+
+from flask import Response, abort, jsonify, make_response, request
+from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import text
 
 from app import db, limiter
@@ -21,6 +19,7 @@ from app.utils.decorators import (
     requer_super_admin,
 )
 from app.utils import totp
+from app.utils.auth_tokens import emitir_sessao_plataforma
 from app.domains.core.blueprints.super_admin import service
 
 
@@ -28,17 +27,8 @@ def _operador_atual():
     return db.session.get(PlatformUser, _platform_user_id())
 
 
-def _claims_para(user):
-    return {
-        'tipo': 'platform',
-        'scope': 'platform',
-        'is_super_admin': user.papel == 'super_admin',
-        'papel': user.papel,
-    }
-
-
 # ---------------------------------------------------------------------------
-# Autenticação
+# Autenticação (sessão via cookies; /me, /refresh e /logout ficam em /auth/*)
 # ---------------------------------------------------------------------------
 
 @super_admin_bp.route('/login', methods=['POST'])
@@ -76,42 +66,16 @@ def login():
             return jsonify({'erro': 'Código de verificação inválido.'}), 401
 
     service.registrar_sucesso_login(user)
-    claims = _claims_para(user)
-    token = create_access_token(identity=f'platform:{user.id}', additional_claims=claims)
-    refresh = create_refresh_token(identity=f'platform:{user.id}', additional_claims=claims)
     service.registrar_auditoria('login', 'platform_user', user.id, 'Login Super Admin', platform_user_id=user.id)
 
-    # Política global de 2FA obrigatório: sinaliza ao front que o operador precisa configurar
     config = service.obter_config()
     mfa_setup_requerido = bool(config.forcar_2fa) and not user.mfa_habilitado
 
-    return jsonify({
-        'access_token': token,
-        'refresh_token': refresh,
+    resp = make_response(jsonify({
         'usuario': user.to_dict(),
         'mfa_setup_requerido': mfa_setup_requerido,
-    }), 200
-
-
-@super_admin_bp.route('/refresh', methods=['POST'])
-@jwt_required(refresh=True)
-def refresh():
-    claims = get_jwt()
-    identity = get_jwt_identity()
-    if claims.get('tipo') != 'platform':
-        return jsonify({'erro': 'Refresh token inválido para plataforma.'}), 401
-
-    user = _operador_atual()
-    if not user or not user.ativo:
-        return jsonify({'erro': 'Operador inativo.'}), 403
-
-    return jsonify({'access_token': create_access_token(identity=identity, additional_claims=_claims_para(user))}), 200
-
-
-@super_admin_bp.route('/me', methods=['GET'])
-@requer_operador_plataforma
-def me():
-    return jsonify({'usuario': _operador_atual().to_dict()}), 200
+    }), 200)
+    return emitir_sessao_plataforma(resp, user)
 
 
 # ---------------------------------------------------------------------------
@@ -320,11 +284,16 @@ def impersonar(tenant_id):
         return jsonify({'erro': 'usuario_id é obrigatório.'}), 400
 
     operador = _operador_atual()
-    tokens, alvo = service.gerar_token_impersonacao(tenant, operador, usuario_id)
-    if tokens is None:
+    access, refresh, alvo = service.gerar_tokens_impersonacao(tenant, operador, usuario_id)
+    if access is None:
         return jsonify({'erro': 'Usuário alvo inválido ou inativo.'}), 404
     service.registrar_auditoria('impersonar', 'tenant', tenant.id, f'Impersonou usuário {alvo.get("email")} em {tenant.subdominio}', platform_user_id=operador.id)
-    return jsonify(tokens), 200
+
+    from flask_jwt_extended import set_access_cookies, set_refresh_cookies
+    resp = make_response(jsonify({'usuario': alvo, 'workspace': tenant.to_dict()}), 200)
+    set_access_cookies(resp, access)
+    set_refresh_cookies(resp, refresh)
+    return resp
 
 
 # ---------------------------------------------------------------------------
@@ -389,6 +358,7 @@ def desativar_operador(operador_id):
         if ativos <= 1:
             return jsonify({'erro': 'Não é possível desativar o último Super Admin ativo.'}), 400
     operador.ativo = False
+    operador.revogar_tokens()
     db.session.commit()
     service.registrar_auditoria('desativar_operador', 'platform_user', operador.id, f'Operador {operador.email} desativado', platform_user_id=_platform_user_id())
     return jsonify({'mensagem': 'Operador desativado.'}), 200

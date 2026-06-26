@@ -1,108 +1,88 @@
 import axios from 'axios';
 
 const DEFAULT_LOCAL_API_URL = 'http://localhost:5001';
-const PRODUCTION_API_URL = 'https://crm-production-0b91.up.railway.app';
+const PRODUCTION_API_URL = 'https://api.douglasgermano.com';
 
 const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-
   if (typeof window !== 'undefined') {
     const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
     return isLocalhost ? DEFAULT_LOCAL_API_URL : PRODUCTION_API_URL;
   }
-
   return DEFAULT_LOCAL_API_URL;
 };
 
+// Chave não sensível usada apenas para escolher a tela de login no redirect.
+const SCOPE_KEY = 'auth_scope';
+const REFRESH_URL = '/api/v1/core/auth/refresh';
+
 const api = axios.create({
   baseURL: getApiBaseUrl(),
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // envia/recebe cookies httpOnly de sessão
 });
 
-// Request interceptor - attach JWT token
-api.interceptors.request.use(
-  (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+function lerCookie(nome: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(?:^|; )' + nome + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+const METODOS_MUTANTES = ['post', 'put', 'patch', 'delete'];
+
+// Request interceptor — anexa o token CSRF (double-submit) nas requisições mutantes.
+api.interceptors.request.use((config) => {
+  const metodo = (config.method || 'get').toLowerCase();
+  if (METODOS_MUTANTES.includes(metodo)) {
+    const ehRefresh = (config.url || '').includes('/auth/refresh');
+    const csrf = lerCookie(ehRefresh ? 'csrf_refresh_token' : 'csrf_access_token');
+    if (csrf) {
+      config.headers = config.headers || {};
+      config.headers['X-CSRF-TOKEN'] = csrf;
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+  }
+  return config;
+});
 
-const isRefreshUrl = (url?: string) => !!url && url.includes('/refresh');
-
-// Guarda para garantir que o encerramento de sessão (e o redirect) rode UMA vez.
-// Sem isso, a falha de refresh dispara limparSessao 2x e a 2ª chamada (já com
-// auth_tipo removido) sobrescreve o destino, mandando o Super Admin para /login.
 let encerrandoSessao = false;
 
-const limparSessao = () => {
+const redirecionarLogin = () => {
   if (typeof window === 'undefined' || encerrandoSessao) return;
   encerrandoSessao = true;
-
-  const authTipo = localStorage.getItem('auth_tipo');
-  const destino = authTipo === 'platform' ? '/super-admin/login' : '/login';
-
-  localStorage.removeItem('token');
-  localStorage.removeItem('refresh_token');
-  localStorage.removeItem('auth_tipo');
-  localStorage.removeItem('workspace_nome');
-  localStorage.removeItem('impersonacao');
-  localStorage.removeItem('plat_token');
-  localStorage.removeItem('plat_refresh');
-
-  // Evita loop de redirecionamento se já estamos na tela de login
+  const scope = localStorage.getItem(SCOPE_KEY);
+  localStorage.removeItem(SCOPE_KEY);
+  const destino = scope === 'platform' ? '/super-admin/login' : '/login';
   if (!window.location.pathname.startsWith(destino)) {
     window.location.href = destino;
   }
 };
 
-// Response interceptor - handle 401 and refresh
+// Response interceptor — em 401, tenta um refresh único; se falhar, vai para o login.
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const original = error.config;
     const status = error.response?.status;
+    const url: string = original?.url || '';
 
-    // Se a PRÓPRIA chamada de refresh falhou (401/403), não tente refrescar de novo:
-    // encerra a sessão. Isso elimina o loop infinito de /refresh.
-    if ((status === 401 || status === 403) && isRefreshUrl(originalRequest?.url)) {
-      limparSessao();
+    // Falha no próprio refresh → encerra (evita loop)
+    if (status === 401 && url.includes('/auth/refresh')) {
+      redirecionarLogin();
       return Promise.reject(error);
     }
 
-    if (status === 401 && originalRequest && !originalRequest._retry) {
-      originalRequest._retry = true;
+    // Não tenta refrescar em rotas públicas de login
+    const ehLogin = url.includes('/login');
 
-      const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
-      if (!refreshToken) {
-        limparSessao();
-        return Promise.reject(error);
-      }
-
+    if (status === 401 && original && !original._retry && !ehLogin) {
+      original._retry = true;
       try {
-        const authTipo = localStorage.getItem('auth_tipo');
-        const refreshUrl = authTipo === 'platform'
-          ? '/api/v1/core/super-admin/refresh'
-          : '/api/v1/core/usuarios/refresh';
-        const response = await api.post(refreshUrl, {}, {
-          headers: { Authorization: `Bearer ${refreshToken}` },
-        });
-
-        const { access_token } = response.data;
-        localStorage.setItem('token', access_token);
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
-        return api(originalRequest);
+        await api.post(REFRESH_URL);
+        return api(original); // cookie de access renovado automaticamente
       } catch (refreshError) {
-        limparSessao();
+        redirecionarLogin();
         return Promise.reject(refreshError);
       }
     }

@@ -143,18 +143,14 @@ export default function MobileInspecaoCampoPage() {
   const baixarPdf = async () => {
     if (!inspecaoId) return;
 
-    const token = localStorage.getItem('token');
-    const url = `${api.defaults.baseURL}/api/v1/inspect/inspecoes/${inspecaoId}/pdf`;
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!response.ok) {
+    let blobUrl: string;
+    try {
+      const response = await api.get(`/api/v1/inspect/inspecoes/${inspecaoId}/pdf`, { responseType: 'blob' });
+      blobUrl = URL.createObjectURL(response.data);
+    } catch {
       setErro('Não foi possível baixar o laudo.');
       return;
     }
-
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
     link.download = `laudo-inspecao-${inspecaoId}.pdf`;

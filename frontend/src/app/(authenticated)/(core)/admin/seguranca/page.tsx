@@ -26,7 +26,7 @@ export default function SegurancaPage() {
   const carregar = async () => {
     setLoading(true);
     try {
-      const resp = await api.get('/api/v1/core/super-admin/me');
+      const resp = await api.get('/api/v1/core/auth/me');
       setHabilitado(!!resp.data.usuario.mfa_habilitado);
     } catch {
       toast('Falha ao carregar status de segurança.', 'error');

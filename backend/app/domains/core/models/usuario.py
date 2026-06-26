@@ -14,12 +14,18 @@ class Usuario(db.Model):
     perfil_id = db.Column(db.Integer, db.ForeignKey('perfis.id'), nullable=False)
     ativo = db.Column(db.Boolean, default=True)
     deve_trocar_senha = db.Column(db.Boolean, default=True)
+    # Revogação: tokens carregam esta versão; incrementar invalida todos os tokens existentes
+    token_version = db.Column(db.Integer, default=0, nullable=False)
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     ultimo_login = db.Column(db.DateTime)
-    
+
     # Relacionamentos
     perfil = db.relationship('Perfil', back_populates='usuarios')
     logs = db.relationship('LogAtividade', back_populates='usuario', lazy='dynamic')
+
+    def revogar_tokens(self):
+        """Invalida todos os tokens ativos deste usuário (troca de senha/desativação)."""
+        self.token_version = (self.token_version or 0) + 1
     
     @property
     def senha(self):

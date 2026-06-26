@@ -5,89 +5,78 @@ from app.models import Usuario
 from app import db
 
 
+def escopo_atual():
+    """Retorna o `scope` do token atual ('platform' | 'tenant' | None)."""
+    return (get_jwt() or {}).get('scope')
+
+
 def _platform_user_id():
-    """Extrai o id do PlatformUser a partir da identity `platform:<id>`."""
+    """Id do PlatformUser a partir da identity (numérica, scope=platform)."""
     identity = get_jwt_identity()
-    if isinstance(identity, str) and identity.startswith('platform:'):
-        try:
-            return int(identity.split(':', 1)[1])
-        except (ValueError, IndexError):
-            return None
-    return None
+    try:
+        return int(identity)
+    except (ValueError, TypeError):
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Plataforma (Super Admin) — confia nas claims do access token (curto).
+# A revalidação no banco (ativo + token_version) acontece no /auth/refresh.
+# ---------------------------------------------------------------------------
+
+def requer_operador_plataforma(f):
+    """Exige token de plataforma (super_admin OU suporte)."""
+    @wraps(f)
+    @jwt_required()
+    def decorated_function(*args, **kwargs):
+        claims = get_jwt()
+        if claims.get('scope') != 'platform':
+            return jsonify({'erro': 'Acesso negado. Requer operador da plataforma.'}), 403
+        if claims.get('papel') not in ('super_admin', 'suporte'):
+            return jsonify({'erro': 'Operador sem permissão de plataforma.'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def requer_super_admin(f):
-    """Exige um token de plataforma válido com papel super_admin (acesso total).
-
-    Revalida o operador no banco (ativo + papel) a cada requisição — não confia
-    apenas nas claims do JWT.
-    """
+    """Exige token de plataforma com papel super_admin (acesso total)."""
     @wraps(f)
     @jwt_required()
     def decorated_function(*args, **kwargs):
-        from app.domains.core.models import PlatformUser
-
         claims = get_jwt()
-        if claims.get('tipo') != 'platform' or not claims.get('is_super_admin'):
+        if claims.get('scope') != 'platform' or claims.get('papel') != 'super_admin':
             return jsonify({'erro': 'Acesso negado. Requer Super Admin da plataforma.'}), 403
-
-        user_id = _platform_user_id()
-        if user_id is None:
-            return jsonify({'erro': 'Token de plataforma inválido.'}), 401
-
-        user = db.session.get(PlatformUser, user_id)
-        if not user or not user.ativo or user.papel != 'super_admin':
-            return jsonify({'erro': 'Operador Super Admin inativo ou sem permissão.'}), 403
-
         return f(*args, **kwargs)
     return decorated_function
 
 
-def requer_operador_plataforma(f):
-    """Exige token de plataforma ativo (super_admin OU suporte).
-
-    Usar em rotas de inspeção/leitura que o papel 'suporte' também pode acessar.
-    """
-    @wraps(f)
-    @jwt_required()
-    def decorated_function(*args, **kwargs):
-        from app.domains.core.models import PlatformUser
-
-        claims = get_jwt()
-        if claims.get('tipo') != 'platform':
-            return jsonify({'erro': 'Acesso negado. Requer operador da plataforma.'}), 403
-
-        user_id = _platform_user_id()
-        if user_id is None:
-            return jsonify({'erro': 'Token de plataforma inválido.'}), 401
-
-        user = db.session.get(PlatformUser, user_id)
-        if not user or not user.ativo or user.papel not in PlatformUser.PAPEIS_VALIDOS:
-            return jsonify({'erro': 'Operador da plataforma inativo ou sem permissão.'}), 403
-
-        return f(*args, **kwargs)
-    return decorated_function
-
+# ---------------------------------------------------------------------------
+# Tenant — carrega o usuário (necessário p/ permissões) e revalida revogação.
+# ---------------------------------------------------------------------------
 
 def token_required(f):
-    """Decorator que exige token JWT e injeta o usuário atual como primeiro argumento."""
+    """Exige token de tenant e injeta o usuário atual como primeiro argumento."""
     @wraps(f)
     @jwt_required()
     def decorated_function(*args, **kwargs):
         try:
-            identity = get_jwt_identity()
+            claims = get_jwt()
+            if claims.get('scope') != 'tenant':
+                return jsonify({'erro': 'Token inválido para este recurso'}), 403
+
             try:
-                usuario_id = int(identity)
+                usuario_id = int(get_jwt_identity())
             except (ValueError, TypeError):
                 return jsonify({'erro': 'Token inválido'}), 401
 
             usuario = db.session.get(Usuario, usuario_id)
-
             if not usuario:
                 return jsonify({'erro': 'Usuário não encontrado'}), 404
-
             if not usuario.ativo:
                 return jsonify({'erro': 'Usuário desativado'}), 403
+            # Revogação: o token precisa carregar a versão atual do usuário
+            if claims.get('ver') != (usuario.token_version or 0):
+                return jsonify({'erro': 'Sessão revogada. Faça login novamente.'}), 401
 
             return f(usuario, *args, **kwargs)
 
@@ -99,7 +88,7 @@ def token_required(f):
 
 
 def requer_permissao(codigo_permissao):
-    """Decorator que verifica permissão. Deve ser usado com @token_required."""
+    """Verifica permissão. Deve ser usado com @token_required."""
     def decorator(f):
         @wraps(f)
         def decorated_function(usuario_atual, *args, **kwargs):

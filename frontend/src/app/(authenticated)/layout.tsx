@@ -19,7 +19,7 @@ function ImpersonationBanner() {
         Você está impersonando {user?.email ? <b>{user.email}</b> : 'um usuário'} — toda ação é auditada.
       </span>
       <button
-        onClick={() => { if (encerrarImpersonacao()) window.location.href = '/admin'; }}
+        onClick={() => { void encerrarImpersonacao(); }}
         className="rounded bg-white/15 px-3 py-1 text-xs font-semibold hover:bg-white/25 transition-colors"
       >
         Voltar ao Super Admin
