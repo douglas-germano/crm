@@ -2,10 +2,6 @@ import csv
 import io
 from datetime import datetime
 
-import csv
-import io
-from datetime import datetime
-
 from flask import Response, abort, jsonify, make_response, request
 from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import text
